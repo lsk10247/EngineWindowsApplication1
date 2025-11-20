@@ -3,6 +3,7 @@ using ESRI.ArcGIS.Controls;
 using ESRI.ArcGIS.DataSourcesFile;
 using ESRI.ArcGIS.Display;
 using ESRI.ArcGIS.Geodatabase;
+using ESRI.ArcGIS.Geometry;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,6 +17,7 @@ namespace EngineWindowsApplication1
 {
     public partial class Form1 : Form
     {
+        MapOperatorType mapOperatorType;
         public Form1()
         {
             InitializeComponent();
@@ -45,6 +47,8 @@ namespace EngineWindowsApplication1
             toolStripStatusLabel3.TextAlign = ContentAlignment.MiddleLeft;
             toolStripStatusLabel3.Width = 300;
             toolStripStatusLabel3.Text = "开发人员：刘世坤，赵志阳，周桂添，2025.11.10";
+
+            mapOperatorType = MapOperatorType.Default;
         }
 
         /// <summary>
@@ -148,7 +152,7 @@ namespace EngineWindowsApplication1
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string filePath = openFileDialog.FileName;
-                    string fileExtension = Path.GetExtension(filePath).ToLower();
+                    string fileExtension = System.IO.Path.GetExtension(filePath).ToLower();
 
                     switch (fileExtension)
                     {
@@ -172,7 +176,7 @@ namespace EngineWindowsApplication1
 
                     // 刷新地图显示
                     axMapControl1.Refresh();
-                    MessageBox.Show($"成功打开文件：{Path.GetFileName(filePath)}", "打开成功",
+                    MessageBox.Show($"成功打开文件：{System.IO.Path.GetFileName(filePath)}", "打开成功",
                                   MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
@@ -228,10 +232,10 @@ namespace EngineWindowsApplication1
             {
                 // 创建工作空间工厂
                 IWorkspaceFactory workspaceFactory = new ShapefileWorkspaceFactoryClass();
-                IWorkspace workspace = workspaceFactory.OpenFromFile(Path.GetDirectoryName(shpPath), 0);
+                IWorkspace workspace = workspaceFactory.OpenFromFile(System.IO.Path.GetDirectoryName(shpPath), 0);
 
                 // 打开要素类
-                IFeatureClass featureClass = (workspace as IFeatureWorkspace).OpenFeatureClass(Path.GetFileNameWithoutExtension(shpPath));
+                IFeatureClass featureClass = (workspace as IFeatureWorkspace).OpenFeatureClass(System.IO.Path.GetFileNameWithoutExtension(shpPath));
 
                 // 创建要素图层
                 IFeatureLayer featureLayer = new FeatureLayerClass();
@@ -417,7 +421,7 @@ namespace EngineWindowsApplication1
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"加载文件 {Path.GetFileName(shpFile)} 失败: {ex.Message}");
+                            Console.WriteLine($"加载文件 {System.IO.Path.GetFileName(shpFile)} 失败: {ex.Message}");
                         }
                     }
 
@@ -438,8 +442,8 @@ namespace EngineWindowsApplication1
         {
             try
             {
-                string directory = Path.GetDirectoryName(shpPath);
-                string fileName = Path.GetFileNameWithoutExtension(shpPath);
+                string directory = System.IO.Path.GetDirectoryName(shpPath);
+                string fileName = System.IO.Path.GetFileNameWithoutExtension(shpPath);
 
                 IWorkspaceFactory workspaceFactory = new ShapefileWorkspaceFactoryClass();
                 IFeatureWorkspace featureWorkspace = (IFeatureWorkspace)workspaceFactory.OpenFromFile(directory, 0);
@@ -891,6 +895,50 @@ namespace EngineWindowsApplication1
 
         private void menuFeatureNew_Click(object sender, EventArgs e)
         {
+            ILayer layer = GetSelectedLayer();
+            if (layer == null) return;
+
+            // 判断图层是否为要素图层
+            IFeatureLayer featureLayer = layer as IFeatureLayer;
+            if (featureLayer != null)
+            {
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                if (featureClass != null)
+                {
+                    // 获取几何类型
+                    esriGeometryType geometryType = featureClass.ShapeType;
+
+                    switch (geometryType)
+                    {
+                        case esriGeometryType.esriGeometryPoint:
+                        case esriGeometryType.esriGeometryMultipoint:
+                            // 点图层操作
+                            mapOperatorType = MapOperatorType.CreatePoint;
+                            break;
+
+                        case esriGeometryType.esriGeometryPolyline:
+                        case esriGeometryType.esriGeometryLine:
+                            // 线图层操作
+                            mapOperatorType = MapOperatorType.CreatePolyline;
+                            break;
+
+                        case esriGeometryType.esriGeometryPolygon:
+                            // 面图层操作
+                            mapOperatorType = MapOperatorType.CreatePolygon;
+                            break;
+
+                        default:
+                            // 其他几何类型
+                            MessageBox.Show("不支持的几何类型");
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                // 如果不是要素图层（如图栅格图层等）
+                MessageBox.Show("请选择要素图层");
+            }
             FormNewFeatureClass formNewFeatureClass = new FormNewFeatureClass();
             formNewFeatureClass.Show();
         }
@@ -918,6 +966,118 @@ namespace EngineWindowsApplication1
         private void menuFeatureDeleteByPolygon_Click(object sender, EventArgs e)
         {
 
+        }
+        // 向图层添加点要素
+        private void AddPointToLayer(ILayer layer, double x, double y)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null)
+                {
+                    MessageBox.Show("所选图层不是要素图层");
+                    return;
+                }
+
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                if (featureClass == null)
+                {
+                    MessageBox.Show("无法获取要素类");
+                    return;
+                }
+
+                // 检查几何类型是否为点
+                if (featureClass.ShapeType != esriGeometryType.esriGeometryPoint &&
+                    featureClass.ShapeType != esriGeometryType.esriGeometryMultipoint)
+                {
+                    MessageBox.Show("该图层不是点图层");
+                    return;
+                }
+
+                // 开始编辑会话
+                IWorkspaceEdit workspaceEdit = GetWorkspaceEdit(featureClass);
+                if (workspaceEdit != null)
+                {
+                    workspaceEdit.StartEditing(false);
+                    workspaceEdit.StartEditOperation();
+                }
+
+                // 创建新要素
+                IFeature feature = featureClass.CreateFeature();
+
+                // 创建点几何
+                IPoint point = new PointClass();
+                point.X = x;
+                point.Y = y;
+
+                // 设置空间参考（如果需要）
+                IGeoDataset geoDataset = featureClass as IGeoDataset;
+                if (geoDataset != null)
+                {
+                    point.SpatialReference = geoDataset.SpatialReference;
+                }
+
+                // 设置要素的几何
+                feature.Shape = point;
+
+                // 设置属性值（如果有属性字段）
+                // feature.set_Value(featureClass.FindField("字段名"), "值");
+
+                // 保存要素
+                feature.Store();
+
+                // 结束编辑会话
+                if (workspaceEdit != null)
+                {
+                    workspaceEdit.StopEditOperation();
+                    workspaceEdit.StopEditing(true);
+                }
+
+                // 刷新地图
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+
+                MessageBox.Show("点要素添加成功");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("添加点要素时出错: " + ex.Message);
+            }
+        }
+
+        // 获取工作空间编辑接口
+        private IWorkspaceEdit GetWorkspaceEdit(IFeatureClass featureClass)
+        {
+            IDataset dataset = featureClass as IDataset;
+            if (dataset != null)
+            {
+                IWorkspace workspace = dataset.Workspace;
+                return workspace as IWorkspaceEdit;
+            }
+            return null;
+        }
+        private void axMapControl1_OnMouseDown(object sender, IMapControlEvents2_OnMouseDownEvent e)
+        {
+            switch (mapOperatorType)
+            {
+                case MapOperatorType.Default:
+                    break;
+                case MapOperatorType.CreatePoint:
+                    ILayer layer = GetSelectedLayer();
+                    if (layer != null)
+                    {
+                        // 将屏幕坐标转换为地图坐标
+                        IPoint mapPoint = axMapControl1.ActiveView.ScreenDisplay.DisplayTransformation.ToMapPoint(e.x, e.y);
+                        AddPointToLayer(layer, mapPoint.X, mapPoint.Y);
+                    }
+                    break;
+                case MapOperatorType.CreatePolyline:
+                    break;
+                case MapOperatorType.CreatePolygon:
+                    break;
+                default:
+                    break;
+
+            }
         }
     }
 }
