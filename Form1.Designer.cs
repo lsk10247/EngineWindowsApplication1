@@ -64,14 +64,14 @@ namespace EngineWindowsApplication1
             this.ÒªËØ¹ÜÀíToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureNew = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureEdit = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuFeatureDelete = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuFeatureBrowse = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuFeatureIdentify = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureEditByLocation = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureEditByRectangle = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuFeatureDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureDeleteByLocation = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureDeleteByRectangle = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureDeleteByPolygon = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuFeatureBrowse = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuFeatureIdentify = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -433,7 +433,7 @@ namespace EngineWindowsApplication1
             // menuFeatureNew
             // 
             this.menuFeatureNew.Name = "menuFeatureNew";
-            this.menuFeatureNew.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureNew.Size = new System.Drawing.Size(100, 22);
             this.menuFeatureNew.Text = "Ìí¼Ó";
             this.menuFeatureNew.Click += new System.EventHandler(this.menuFeatureNew_Click);
             // 
@@ -443,8 +443,22 @@ namespace EngineWindowsApplication1
             this.menuFeatureEditByLocation,
             this.menuFeatureEditByRectangle});
             this.menuFeatureEdit.Name = "menuFeatureEdit";
-            this.menuFeatureEdit.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureEdit.Size = new System.Drawing.Size(100, 22);
             this.menuFeatureEdit.Text = "±à¼­";
+            // 
+            // menuFeatureEditByLocation
+            // 
+            this.menuFeatureEditByLocation.Name = "menuFeatureEditByLocation";
+            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(124, 22);
+            this.menuFeatureEditByLocation.Text = "µãÑ¡±à¼­";
+            this.menuFeatureEditByLocation.Click += new System.EventHandler(this.menuFeatureEditByLocation_Click);
+            // 
+            // menuFeatureEditByRectangle
+            // 
+            this.menuFeatureEditByRectangle.Name = "menuFeatureEditByRectangle";
+            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(124, 22);
+            this.menuFeatureEditByRectangle.Text = "¿òÑ¡±à¼­";
+            this.menuFeatureEditByRectangle.Click += new System.EventHandler(this.menuFeatureEditByRectangle_Click);
             // 
             // menuFeatureDelete
             // 
@@ -453,55 +467,41 @@ namespace EngineWindowsApplication1
             this.menuFeatureDeleteByRectangle,
             this.menuFeatureDeleteByPolygon});
             this.menuFeatureDelete.Name = "menuFeatureDelete";
-            this.menuFeatureDelete.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureDelete.Size = new System.Drawing.Size(100, 22);
             this.menuFeatureDelete.Text = "É¾³ý";
-            // 
-            // menuFeatureBrowse
-            // 
-            this.menuFeatureBrowse.Name = "menuFeatureBrowse";
-            this.menuFeatureBrowse.Size = new System.Drawing.Size(180, 22);
-            this.menuFeatureBrowse.Text = "ä¯ÀÀ";
-            // 
-            // menuFeatureIdentify
-            // 
-            this.menuFeatureIdentify.Name = "menuFeatureIdentify";
-            this.menuFeatureIdentify.Size = new System.Drawing.Size(180, 22);
-            this.menuFeatureIdentify.Text = "ÐÅÏ¢";
-            // 
-            // menuFeatureEditByLocation
-            // 
-            this.menuFeatureEditByLocation.Name = "menuFeatureEditByLocation";
-            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(180, 22);
-            this.menuFeatureEditByLocation.Text = "µãÑ¡±à¼­";
-            this.menuFeatureEditByLocation.Click += new System.EventHandler(this.menuFeatureEditByLocation_Click);
-            // 
-            // menuFeatureEditByRectangle
-            // 
-            this.menuFeatureEditByRectangle.Name = "menuFeatureEditByRectangle";
-            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(180, 22);
-            this.menuFeatureEditByRectangle.Text = "¿òÑ¡±à¼­";
-            this.menuFeatureEditByRectangle.Click += new System.EventHandler(this.menuFeatureEditByRectangle_Click);
             // 
             // menuFeatureDeleteByLocation
             // 
             this.menuFeatureDeleteByLocation.Name = "menuFeatureDeleteByLocation";
-            this.menuFeatureDeleteByLocation.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureDeleteByLocation.Size = new System.Drawing.Size(136, 22);
             this.menuFeatureDeleteByLocation.Text = "µãÑ¡É¾³ý";
             this.menuFeatureDeleteByLocation.Click += new System.EventHandler(this.menuFeatureDeleteByLocation_Click);
             // 
             // menuFeatureDeleteByRectangle
             // 
             this.menuFeatureDeleteByRectangle.Name = "menuFeatureDeleteByRectangle";
-            this.menuFeatureDeleteByRectangle.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureDeleteByRectangle.Size = new System.Drawing.Size(136, 22);
             this.menuFeatureDeleteByRectangle.Text = "¿òÑ¡É¾³ý";
             this.menuFeatureDeleteByRectangle.Click += new System.EventHandler(this.menuFeatureDeleteByRectangle_Click);
             // 
             // menuFeatureDeleteByPolygon
             // 
             this.menuFeatureDeleteByPolygon.Name = "menuFeatureDeleteByPolygon";
-            this.menuFeatureDeleteByPolygon.Size = new System.Drawing.Size(180, 22);
+            this.menuFeatureDeleteByPolygon.Size = new System.Drawing.Size(136, 22);
             this.menuFeatureDeleteByPolygon.Text = "¶à±ßÐÎÉ¾³ý";
             this.menuFeatureDeleteByPolygon.Click += new System.EventHandler(this.menuFeatureDeleteByPolygon_Click);
+            // 
+            // menuFeatureBrowse
+            // 
+            this.menuFeatureBrowse.Name = "menuFeatureBrowse";
+            this.menuFeatureBrowse.Size = new System.Drawing.Size(100, 22);
+            this.menuFeatureBrowse.Text = "ä¯ÀÀ";
+            // 
+            // menuFeatureIdentify
+            // 
+            this.menuFeatureIdentify.Name = "menuFeatureIdentify";
+            this.menuFeatureIdentify.Size = new System.Drawing.Size(100, 22);
+            this.menuFeatureIdentify.Text = "ÐÅÏ¢";
             // 
             // Form1
             // 
