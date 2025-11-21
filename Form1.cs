@@ -1056,7 +1056,64 @@ namespace EngineWindowsApplication1
             }
         }
 
-        private IFeature SelectFeatureByRectangle_Func(ILayer layer)
+        /// <summary>
+        /// 高亮显示选中要素的通用方法
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <param name="feature"></param>
+        /// <param name="activeView"></param>
+        private void HighLightFeature(ILayer layer, IFeature feature, IActiveView activeView)
+        {
+            axMapControl1.Map.ClearSelection(); // 清除之前的选择
+            axMapControl1.Map.SelectFeature(layer, feature); // 高亮当前要素
+            activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null); // 刷新选择高亮
+        }
+        /// <summary>
+        /// 点选编辑要素主函数
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void SelectFeatureByLocation_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
+        {
+            //创建一个点对象，用于存储鼠标点击的地图坐标
+            IPoint point = new PointClass();
+            point.PutCoords(e.mapX, e.mapY);
+            //将图层转换为该接口，该接口支持要素识别
+            IIdentify identifyLayer = (IIdentify)layer;
+            //在点击位置进行要素识别，返回识别结果
+            IArray array = identifyLayer.Identify(point);
+            //检查是否识别到要素
+            if (array != null && array.Count > 0)
+            {
+                //获取数组中的第一个元素
+                object obj = array.get_Element(0);
+                //将识别结果转换为要素识别的对象
+                IFeatureIdentifyObj fobj = obj as IFeatureIdentifyObj;
+                IRowIdentifyObject irow = fobj as IRowIdentifyObject;
+                //获取选中的要素
+                IFeature feature = irow.Row as IFeature;
+                //高亮显示选中的要素
+                this.axMapControl1.Map.SelectFeature(layer, feature);
+
+                //刷新地图显示
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                //打开要素编辑窗体
+                using (FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
+                {
+                    DialogResult result = editForm.ShowDialog();
+                    this.axMapControl1.Map.ClearSelection();
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                }
+            }
+        }
+        /// <summary>
+        /// 框选编辑要素主函数
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <returns></returns>
+        private void SelectFeatureByRectangle_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
         {
             try
             {
@@ -1067,7 +1124,6 @@ namespace EngineWindowsApplication1
                 if (envelope == null || envelope.IsEmpty)
                 {
                     MessageBox.Show("未绘制有效的选择范围", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return null;
                 }
                 // 2. 创建空间过滤器
                 ISpatialFilter spatialFilter = new SpatialFilterClass();
@@ -1077,12 +1133,23 @@ namespace EngineWindowsApplication1
                 IFeatureCursor featureCursor = featureLayer.FeatureClass.Search(spatialFilter, true);
                 IFeature feature = featureCursor.NextFeature();
 
-                return feature;
+                //高亮显示选中的要素
+                this.axMapControl1.Map.SelectFeature(layer, feature);
+                //刷新地图显示
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                //打开要素编辑窗体
+                using (FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
+                {
+                    DialogResult result = editForm.ShowDialog();
+                    this.axMapControl1.Map.ClearSelection();
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"框选搜索失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
+                MessageBox.Show($"框选编辑要素失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1124,6 +1191,12 @@ namespace EngineWindowsApplication1
                     break;
                 //点选要素
                 case MapOperatorType.SelectFeatureByLocation:
+                    SelectFeatureByLocation_Func(e, layer, activeView);
+                    break;
+                case MapOperatorType.SelectFeatureByRectangle:
+                    SelectFeatureByRectangle_Func(e, layer, activeView);
+                    break;
+                case MapOperatorType.DeleteFeatureByLocation:
                     //创建一个点对象，用于存储鼠标点击的地图坐标
                     IPoint point = new PointClass();
                     point.PutCoords(e.mapX, e.mapY);
@@ -1132,7 +1205,7 @@ namespace EngineWindowsApplication1
                     //在点击位置进行要素识别，返回识别结果
                     IArray array = identifyLayer.Identify(point);
                     //检查是否识别到要素
-                    if(array != null && array.Count > 0)
+                    if (array != null && array.Count > 0)
                     {
                         //获取数组中的第一个元素
                         object obj = array.get_Element(0);
@@ -1141,35 +1214,6 @@ namespace EngineWindowsApplication1
                         IRowIdentifyObject irow = fobj as IRowIdentifyObject;
                         //获取选中的要素
                         IFeature feature = irow.Row as IFeature;
-                        //高亮显示选中的要素
-                        this.axMapControl1.Map.SelectFeature(layer, feature);
-                        //刷新地图显示
-                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
-                        //打开要素编辑窗体
-                        using (FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
-                        {
-                            DialogResult result = editForm.ShowDialog();
-                            this.axMapControl1.Map.ClearSelection();
-                            activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-                            activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
-                        }
-                    }
-                    break;
-                case MapOperatorType.SelectFeatureByRectangle:
-                    IFeature recFeature = SelectFeatureByRectangle_Func(layer);
-                    //高亮显示选中的要素
-                    this.axMapControl1.Map.SelectFeature(layer, recFeature);
-                    //刷新地图显示
-                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
-                    //打开要素编辑窗体
-                    using (FormEditFeature editForm = new FormEditFeature(recFeature, layer as IFeatureLayer, activeView))
-                    {
-                        DialogResult result = editForm.ShowDialog();
-                        this.axMapControl1.Map.ClearSelection();
-                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                     }
                     break;
                 default:
