@@ -30,24 +30,24 @@ namespace EngineWindowsApplication1
         private void InitializeComponent()
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
+            this.spitalCoord = new System.Windows.Forms.ComboBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.geometryType = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.shpFileName = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
-            this.button3 = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.btnSelectFile = new System.Windows.Forms.Button();
+            this.dataDir = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.btnOK = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.button4 = new System.Windows.Forms.Button();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.Column = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column2 = new System.Windows.Forms.DataGridViewComboBoxColumn();
             this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btnDel = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -55,14 +55,14 @@ namespace EngineWindowsApplication1
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.comboBox2);
+            this.groupBox1.Controls.Add(this.spitalCoord);
             this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Controls.Add(this.comboBox1);
+            this.groupBox1.Controls.Add(this.geometryType);
             this.groupBox1.Controls.Add(this.label3);
-            this.groupBox1.Controls.Add(this.textBox2);
+            this.groupBox1.Controls.Add(this.shpFileName);
             this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Controls.Add(this.button3);
-            this.groupBox1.Controls.Add(this.textBox1);
+            this.groupBox1.Controls.Add(this.btnSelectFile);
+            this.groupBox1.Controls.Add(this.dataDir);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
@@ -71,13 +71,14 @@ namespace EngineWindowsApplication1
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "数据目录及shp文件名称";
             // 
-            // comboBox2
+            // spitalCoord
             // 
-            this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(79, 258);
-            this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(268, 20);
-            this.comboBox2.TabIndex = 8;
+            this.spitalCoord.FormattingEnabled = true;
+            this.spitalCoord.Location = new System.Drawing.Point(79, 258);
+            this.spitalCoord.Name = "spitalCoord";
+            this.spitalCoord.Size = new System.Drawing.Size(268, 20);
+            this.spitalCoord.TabIndex = 8;
+            this.spitalCoord.SelectedIndexChanged += new System.EventHandler(this.spitalCoord_SelectedIndexChanged);
             // 
             // label4
             // 
@@ -88,17 +89,18 @@ namespace EngineWindowsApplication1
             this.label4.TabIndex = 7;
             this.label4.Text = "空间坐标";
             // 
-            // comboBox1
+            // geometryType
             // 
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Items.AddRange(new object[] {
+            this.geometryType.FormattingEnabled = true;
+            this.geometryType.Items.AddRange(new object[] {
             "点",
             "线",
             "面"});
-            this.comboBox1.Location = new System.Drawing.Point(576, 142);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(121, 20);
-            this.comboBox1.TabIndex = 6;
+            this.geometryType.Location = new System.Drawing.Point(576, 142);
+            this.geometryType.Name = "geometryType";
+            this.geometryType.Size = new System.Drawing.Size(121, 20);
+            this.geometryType.TabIndex = 6;
+            this.geometryType.SelectedIndexChanged += new System.EventHandler(this.geometryType_SelectedIndexChanged);
             // 
             // label3
             // 
@@ -109,12 +111,12 @@ namespace EngineWindowsApplication1
             this.label3.TabIndex = 5;
             this.label3.Text = "几何类型";
             // 
-            // textBox2
+            // shpFileName
             // 
-            this.textBox2.Location = new System.Drawing.Point(79, 142);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(268, 21);
-            this.textBox2.TabIndex = 4;
+            this.shpFileName.Location = new System.Drawing.Point(79, 142);
+            this.shpFileName.Name = "shpFileName";
+            this.shpFileName.Size = new System.Drawing.Size(268, 21);
+            this.shpFileName.TabIndex = 4;
             // 
             // label2
             // 
@@ -125,21 +127,23 @@ namespace EngineWindowsApplication1
             this.label2.TabIndex = 3;
             this.label2.Text = "shp文件";
             // 
-            // button3
+            // btnSelectFile
             // 
-            this.button3.Location = new System.Drawing.Point(697, 24);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
-            this.button3.TabIndex = 2;
-            this.button3.Text = "浏览";
-            this.button3.UseVisualStyleBackColor = true;
+            this.btnSelectFile.Location = new System.Drawing.Point(697, 24);
+            this.btnSelectFile.Name = "btnSelectFile";
+            this.btnSelectFile.Size = new System.Drawing.Size(75, 23);
+            this.btnSelectFile.TabIndex = 2;
+            this.btnSelectFile.Text = "浏览";
+            this.btnSelectFile.UseVisualStyleBackColor = true;
+            this.btnSelectFile.Click += new System.EventHandler(this.btnSelectFile_Click);
             // 
-            // textBox1
+            // dataDir
             // 
-            this.textBox1.Location = new System.Drawing.Point(83, 27);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(592, 21);
-            this.textBox1.TabIndex = 1;
+            this.dataDir.Location = new System.Drawing.Point(83, 27);
+            this.dataDir.Name = "dataDir";
+            this.dataDir.Size = new System.Drawing.Size(592, 21);
+            this.dataDir.TabIndex = 1;
+            this.dataDir.TextChanged += new System.EventHandler(this.dataDir_TextChanged);
             // 
             // label1
             // 
@@ -150,23 +154,25 @@ namespace EngineWindowsApplication1
             this.label1.TabIndex = 0;
             this.label1.Text = "数据目录";
             // 
-            // button1
+            // btnOK
             // 
-            this.button1.Location = new System.Drawing.Point(284, 625);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "确定";
-            this.button1.UseVisualStyleBackColor = true;
+            this.btnOK.Location = new System.Drawing.Point(284, 625);
+            this.btnOK.Name = "btnOK";
+            this.btnOK.Size = new System.Drawing.Size(75, 23);
+            this.btnOK.TabIndex = 1;
+            this.btnOK.Text = "确定";
+            this.btnOK.UseVisualStyleBackColor = true;
+            this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
-            // button2
+            // btnClose
             // 
-            this.button2.Location = new System.Drawing.Point(430, 625);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 2;
-            this.button2.Text = "关闭";
-            this.button2.UseVisualStyleBackColor = true;
+            this.btnClose.Location = new System.Drawing.Point(430, 625);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(75, 23);
+            this.btnClose.TabIndex = 2;
+            this.btnClose.Text = "关闭";
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // groupBox2
             // 
@@ -177,15 +183,6 @@ namespace EngineWindowsApplication1
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "字段列表";
-            // 
-            // button4
-            // 
-            this.button4.Location = new System.Drawing.Point(10, 625);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 4;
-            this.button4.Text = "删除字段";
-            this.button4.UseVisualStyleBackColor = true;
             // 
             // dataGridView1
             // 
@@ -226,15 +223,25 @@ namespace EngineWindowsApplication1
             this.Column3.HeaderText = "字段长度";
             this.Column3.Name = "Column3";
             // 
+            // btnDel
+            // 
+            this.btnDel.Location = new System.Drawing.Point(10, 625);
+            this.btnDel.Name = "btnDel";
+            this.btnDel.Size = new System.Drawing.Size(75, 23);
+            this.btnDel.TabIndex = 4;
+            this.btnDel.Text = "删除字段";
+            this.btnDel.UseVisualStyleBackColor = true;
+            this.btnDel.Click += new System.EventHandler(this.btnDel_Click);
+            // 
             // FormNewFeatureClass
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(821, 679);
-            this.Controls.Add(this.button4);
+            this.Controls.Add(this.btnDel);
             this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnClose);
+            this.Controls.Add(this.btnOK);
             this.Controls.Add(this.groupBox1);
             this.Name = "FormNewFeatureClass";
             this.Text = "CreateShpForm";
@@ -250,22 +257,22 @@ namespace EngineWindowsApplication1
 
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.ComboBox comboBox2;
+        private System.Windows.Forms.Button btnOK;
+        private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.ComboBox spitalCoord;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.ComboBox geometryType;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox shpFileName;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button btnSelectFile;
+        private System.Windows.Forms.TextBox dataDir;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column1;
         private System.Windows.Forms.DataGridViewComboBoxColumn Column2;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button btnDel;
     }
 }
