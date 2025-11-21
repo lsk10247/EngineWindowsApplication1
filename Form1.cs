@@ -1104,13 +1104,15 @@ namespace EngineWindowsApplication1
                         this.axMapControl1.Map.SelectFeature(layer, feature);
                         //刷新地图显示
                         activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-
+                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                         //打开要素编辑窗体
-                        using(FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
+                        using (FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
                         {
-                            //编辑成功
-                            if(editForm.ShowDialog() == DialogResult.OK)
+                            DialogResult result = editForm.ShowDialog();
+                            if (result == DialogResult.OK)
                             {
+                                this.axMapControl1.Map.ClearSelection();
+                                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
                                 activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                             }
                         }

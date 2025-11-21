@@ -23,6 +23,8 @@ namespace EngineWindowsApplication1
             this._feature = feature;
             this._layer = layer;
             this._activeView = activeView;
+
+            DisplayFeatureClassInfo();
         }
         /// <summary>
         /// 显示要素类路径及字段列表
@@ -90,7 +92,7 @@ namespace EngineWindowsApplication1
                 bool intEditSession = workspaceEdit.IsBeingEdited();
 
                 //如果不在编辑会话中，开始编辑
-                if(!intEditSession)
+                if (!intEditSession)
                 {
                     workspaceEdit.StartEditing(true);
                 }
@@ -102,15 +104,17 @@ namespace EngineWindowsApplication1
                 IField field;      //字段对象
 
                 //遍历DataGridView中所有行
-                foreach(DataGridViewRow row in this.dgvFields.Rows)
+                foreach (DataGridViewRow row in this.dgvFields.Rows)
                 {
+                    // 跳过新行和空行
+                    if (row.IsNewRow || row.Tag == null) continue;
                     //从行的tag中获取字段索引
                     i = (int)row.Tag;
                     //根据索引获取对应字段
                     field = _feature.Fields.Field[i];
 
                     //获取用户输入的值
-                    object cellValue = row.Cells[i].Value;
+                    object cellValue = row.Cells[1].Value;
                     if (cellValue == null)
                         continue;
 
@@ -136,13 +140,13 @@ namespace EngineWindowsApplication1
                 //结束要素编辑
                 workspaceEdit.StopEditOperation();
                 //如果之前不在编辑，停止编辑并保存
-                if(!intEditSession)
+                if (!intEditSession)
                 {
                     workspaceEdit.StopEditing(true);
                 }
 
                 //刷新地图显示
-                if(_activeView != null)
+                if (_activeView != null)
                 {
                     _activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                 }
