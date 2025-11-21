@@ -111,11 +111,11 @@ namespace EngineWindowsApplication1
             // toolStripContainer1.ContentPanel
             // 
             this.toolStripContainer1.ContentPanel.Controls.Add(this.toolStripContainer2);
-            this.toolStripContainer1.ContentPanel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.toolStripContainer1.ContentPanel.Margin = new System.Windows.Forms.Padding(4);
             this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(1781, 997);
             this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer1.Location = new System.Drawing.Point(0, 0);
-            this.toolStripContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.toolStripContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.toolStripContainer1.Name = "toolStripContainer1";
             this.toolStripContainer1.Size = new System.Drawing.Size(1781, 1055);
             this.toolStripContainer1.TabIndex = 0;
@@ -165,11 +165,11 @@ namespace EngineWindowsApplication1
             // toolStripContainer2.ContentPanel
             // 
             this.toolStripContainer2.ContentPanel.Controls.Add(this.splitContainer1);
-            this.toolStripContainer2.ContentPanel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.toolStripContainer2.ContentPanel.Margin = new System.Windows.Forms.Padding(4);
             this.toolStripContainer2.ContentPanel.Size = new System.Drawing.Size(1781, 970);
             this.toolStripContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer2.Location = new System.Drawing.Point(0, 0);
-            this.toolStripContainer2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.toolStripContainer2.Margin = new System.Windows.Forms.Padding(4);
             this.toolStripContainer2.Name = "toolStripContainer2";
             this.toolStripContainer2.Size = new System.Drawing.Size(1781, 997);
             this.toolStripContainer2.TabIndex = 0;
@@ -183,7 +183,7 @@ namespace EngineWindowsApplication1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -202,7 +202,7 @@ namespace EngineWindowsApplication1
             // 
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer2.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer2.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -222,7 +222,7 @@ namespace EngineWindowsApplication1
             // 
             this.axTOCControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.axTOCControl1.Location = new System.Drawing.Point(0, 0);
-            this.axTOCControl1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.axTOCControl1.Margin = new System.Windows.Forms.Padding(4);
             this.axTOCControl1.Name = "axTOCControl1";
             this.axTOCControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axTOCControl1.OcxState")));
             this.axTOCControl1.Size = new System.Drawing.Size(593, 590);
@@ -232,7 +232,7 @@ namespace EngineWindowsApplication1
             // 
             this.axMapControl2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.axMapControl2.Location = new System.Drawing.Point(0, 0);
-            this.axMapControl2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.axMapControl2.Margin = new System.Windows.Forms.Padding(4);
             this.axMapControl2.Name = "axMapControl2";
             this.axMapControl2.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axMapControl2.OcxState")));
             this.axMapControl2.Size = new System.Drawing.Size(593, 375);
@@ -243,7 +243,7 @@ namespace EngineWindowsApplication1
             // 
             this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer3.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer3.Name = "splitContainer3";
             this.splitContainer3.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -264,7 +264,7 @@ namespace EngineWindowsApplication1
             // 
             this.axToolbarControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.axToolbarControl1.Location = new System.Drawing.Point(0, 0);
-            this.axToolbarControl1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.axToolbarControl1.Margin = new System.Windows.Forms.Padding(4);
             this.axToolbarControl1.Name = "axToolbarControl1";
             this.axToolbarControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axToolbarControl1.OcxState")));
             this.axToolbarControl1.Size = new System.Drawing.Size(1183, 28);
@@ -274,7 +274,7 @@ namespace EngineWindowsApplication1
             // 
             this.axLicenseControl1.Enabled = true;
             this.axLicenseControl1.Location = new System.Drawing.Point(226, 404);
-            this.axLicenseControl1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.axLicenseControl1.Margin = new System.Windows.Forms.Padding(4);
             this.axLicenseControl1.Name = "axLicenseControl1";
             this.axLicenseControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axLicenseControl1.OcxState")));
             this.axLicenseControl1.Size = new System.Drawing.Size(32, 32);
@@ -284,7 +284,7 @@ namespace EngineWindowsApplication1
             // 
             this.axMapControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.axMapControl1.Location = new System.Drawing.Point(0, 0);
-            this.axMapControl1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.axMapControl1.Margin = new System.Windows.Forms.Padding(4);
             this.axMapControl1.Name = "axMapControl1";
             this.axMapControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axMapControl1.OcxState")));
             this.axMapControl1.Size = new System.Drawing.Size(1183, 939);
@@ -452,7 +452,7 @@ namespace EngineWindowsApplication1
             // menuFeatureNew
             // 
             this.menuFeatureNew.Name = "menuFeatureNew";
-            this.menuFeatureNew.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureNew.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureNew.Text = "添加";
             this.menuFeatureNew.Click += new System.EventHandler(this.menuFeatureNew_Click);
             // 
@@ -462,20 +462,20 @@ namespace EngineWindowsApplication1
             this.menuFeatureEditByLocation,
             this.menuFeatureEditByRectangle});
             this.menuFeatureEdit.Name = "menuFeatureEdit";
-            this.menuFeatureEdit.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureEdit.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureEdit.Text = "编辑";
             // 
             // menuFeatureEditByLocation
             // 
             this.menuFeatureEditByLocation.Name = "menuFeatureEditByLocation";
-            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(152, 26);
+            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureEditByLocation.Text = "点选编辑";
             this.menuFeatureEditByLocation.Click += new System.EventHandler(this.menuFeatureEditByLocation_Click);
             // 
             // menuFeatureEditByRectangle
             // 
             this.menuFeatureEditByRectangle.Name = "menuFeatureEditByRectangle";
-            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(152, 26);
+            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureEditByRectangle.Text = "框选编辑";
             this.menuFeatureEditByRectangle.Click += new System.EventHandler(this.menuFeatureEditByRectangle_Click);
             // 
@@ -486,7 +486,7 @@ namespace EngineWindowsApplication1
             this.menuFeatureDeleteByRectangle,
             this.menuFeatureDeleteByPolygon});
             this.menuFeatureDelete.Name = "menuFeatureDelete";
-            this.menuFeatureDelete.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureDelete.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureDelete.Text = "删除";
             // 
             // menuFeatureDeleteByLocation
@@ -513,13 +513,13 @@ namespace EngineWindowsApplication1
             // menuFeatureBrowse
             // 
             this.menuFeatureBrowse.Name = "menuFeatureBrowse";
-            this.menuFeatureBrowse.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureBrowse.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureBrowse.Text = "浏览";
             // 
             // menuFeatureIdentify
             // 
             this.menuFeatureIdentify.Name = "menuFeatureIdentify";
-            this.menuFeatureIdentify.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureIdentify.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureIdentify.Text = "信息";
             // 
             // Form1
@@ -528,7 +528,7 @@ namespace EngineWindowsApplication1
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1781, 1055);
             this.Controls.Add(this.toolStripContainer1);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "湖南省地形图管理系统";
             this.Load += new System.EventHandler(this.Form1_Load);

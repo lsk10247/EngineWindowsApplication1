@@ -107,7 +107,8 @@ namespace EngineWindowsApplication1
                 foreach (DataGridViewRow row in this.dgvFields.Rows)
                 {
                     // 跳过新行和空行
-                    if (row.IsNewRow || row.Tag == null) continue;
+                    if (row.IsNewRow || row.Tag == null) 
+                        continue;
                     //从行的tag中获取字段索引
                     i = (int)row.Tag;
                     //根据索引获取对应字段
@@ -134,9 +135,6 @@ namespace EngineWindowsApplication1
                         _feature.Value[i] = row.Cells[1].Value;
                 }
 
-                //保存要素修改
-                _feature.Store();
-
                 //结束要素编辑
                 workspaceEdit.StopEditOperation();
                 //如果之前不在编辑，停止编辑并保存
@@ -144,6 +142,17 @@ namespace EngineWindowsApplication1
                 {
                     workspaceEdit.StopEditing(true);
                 }
+
+                //保存要素修改
+                _feature.Store();
+
+                ////结束要素编辑
+                //workspaceEdit.StopEditOperation();
+                ////如果之前不在编辑，停止编辑并保存
+                //if (!intEditSession)
+                //{
+                //    workspaceEdit.StopEditing(true);
+                //}
 
                 //刷新地图显示
                 if (_activeView != null)

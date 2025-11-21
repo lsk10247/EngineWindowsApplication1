@@ -943,15 +943,26 @@ namespace EngineWindowsApplication1
             FormNewFeatureClass formNewFeatureClass = new FormNewFeatureClass();
             formNewFeatureClass.Show();
         }
-
+        /// <summary>
+        /// 点选编辑按钮响应函数
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void menuFeatureEditByLocation_Click(object sender, EventArgs e)
         {
             mapOperatorType = MapOperatorType.SelectFeatureByLocation;
         }
-
+        /// <summary>
+        /// 框选编辑按钮响应函数
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void menuFeatureEditByRectangle_Click(object sender, EventArgs e)
         {
-
+            //设置当前操作类型为框选
+            mapOperatorType = MapOperatorType.SelectFeatureByRectangle;
+            //改变鼠标光标样式提示用户
+            axMapControl1.MousePointer = esriControlsMousePointer.esriPointerCrosshair;
         }
 
         private void menuFeatureDeleteByLocation_Click(object sender, EventArgs e)
@@ -1045,6 +1056,36 @@ namespace EngineWindowsApplication1
             }
         }
 
+        private IFeature SelectFeatureByRectangle_Func(ILayer layer)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+
+                //1. 让用户在地图上绘制矩形
+                IEnvelope envelope = axMapControl1.TrackRectangle();
+                if (envelope == null || envelope.IsEmpty)
+                {
+                    MessageBox.Show("未绘制有效的选择范围", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return null;
+                }
+                // 2. 创建空间过滤器
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = envelope;
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+                // 3. 搜索要素
+                IFeatureCursor featureCursor = featureLayer.FeatureClass.Search(spatialFilter, true);
+                IFeature feature = featureCursor.NextFeature();
+
+                return feature;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"框选搜索失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+
         // 获取工作空间编辑接口
         private IWorkspaceEdit GetWorkspaceEdit(IFeatureClass featureClass)
         {
@@ -1064,6 +1105,7 @@ namespace EngineWindowsApplication1
         private void axMapControl1_OnMouseDown(object sender, IMapControlEvents2_OnMouseDownEvent e)
         {
             ILayer layer = GetSelectedLayer();
+            IActiveView activeView = axMapControl1.ActiveView;
             switch (mapOperatorType)
             {
                 case MapOperatorType.Default:
@@ -1082,7 +1124,6 @@ namespace EngineWindowsApplication1
                     break;
                 //点选要素
                 case MapOperatorType.SelectFeatureByLocation:
-                    IActiveView activeView = axMapControl1.ActiveView;
                     //创建一个点对象，用于存储鼠标点击的地图坐标
                     IPoint point = new PointClass();
                     point.PutCoords(e.mapX, e.mapY);
@@ -1109,13 +1150,26 @@ namespace EngineWindowsApplication1
                         using (FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
                         {
                             DialogResult result = editForm.ShowDialog();
-                            if (result == DialogResult.OK)
-                            {
-                                this.axMapControl1.Map.ClearSelection();
-                                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-                                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
-                            }
+                            this.axMapControl1.Map.ClearSelection();
+                            activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                            activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                         }
+                    }
+                    break;
+                case MapOperatorType.SelectFeatureByRectangle:
+                    IFeature recFeature = SelectFeatureByRectangle_Func(layer);
+                    //高亮显示选中的要素
+                    this.axMapControl1.Map.SelectFeature(layer, recFeature);
+                    //刷新地图显示
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                    //打开要素编辑窗体
+                    using (FormEditFeature editForm = new FormEditFeature(recFeature, layer as IFeatureLayer, activeView))
+                    {
+                        DialogResult result = editForm.ShowDialog();
+                        this.axMapControl1.Map.ClearSelection();
+                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
                     }
                     break;
                 default:
