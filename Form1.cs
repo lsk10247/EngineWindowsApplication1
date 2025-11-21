@@ -2,6 +2,7 @@ using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Controls;
 using ESRI.ArcGIS.DataSourcesFile;
 using ESRI.ArcGIS.Display;
+using ESRI.ArcGIS.esriSystem;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Geometry;
 using System;
@@ -945,7 +946,7 @@ namespace EngineWindowsApplication1
 
         private void menuFeatureEditByLocation_Click(object sender, EventArgs e)
         {
-
+            mapOperatorType = MapOperatorType.SelectFeatureByLocation;
         }
 
         private void menuFeatureEditByRectangle_Click(object sender, EventArgs e)
@@ -1055,14 +1056,19 @@ namespace EngineWindowsApplication1
             }
             return null;
         }
+        /// <summary>
+        /// 地图点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void axMapControl1_OnMouseDown(object sender, IMapControlEvents2_OnMouseDownEvent e)
         {
+            ILayer layer = GetSelectedLayer();
             switch (mapOperatorType)
             {
                 case MapOperatorType.Default:
                     break;
                 case MapOperatorType.CreatePoint:
-                    ILayer layer = GetSelectedLayer();
                     if (layer != null)
                     {
                         // 将屏幕坐标转换为地图坐标
@@ -1074,10 +1080,47 @@ namespace EngineWindowsApplication1
                     break;
                 case MapOperatorType.CreatePolygon:
                     break;
+                //点选要素
+                case MapOperatorType.SelectFeatureByLocation:
+                    IActiveView activeView = axMapControl1.ActiveView;
+                    //创建一个点对象，用于存储鼠标点击的地图坐标
+                    IPoint point = new PointClass();
+                    point.PutCoords(e.mapX, e.mapY);
+                    //将图层转换为该接口，该接口支持要素识别
+                    IIdentify identifyLayer = (IIdentify)layer;
+                    //在点击位置进行要素识别，返回识别结果
+                    IArray array = identifyLayer.Identify(point);
+                    //检查是否识别到要素
+                    if(array != null && array.Count > 0)
+                    {
+                        //获取数组中的第一个元素
+                        object obj = array.get_Element(0);
+                        //将识别结果转换为要素识别的对象
+                        IFeatureIdentifyObj fobj = obj as IFeatureIdentifyObj;
+                        IRowIdentifyObject irow = fobj as IRowIdentifyObject;
+                        //获取选中的要素
+                        IFeature feature = irow.Row as IFeature;
+                        //高亮显示选中的要素
+                        this.axMapControl1.Map.SelectFeature(layer, feature);
+                        //刷新地图显示
+                        activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+
+                        //打开要素编辑窗体
+                        using(FormEditFeature editForm = new FormEditFeature(feature, layer as IFeatureLayer, activeView))
+                        {
+                            //编辑成功
+                            if(editForm.ShowDialog() == DialogResult.OK)
+                            {
+                                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                            }
+                        }
+                    }
+                    break;
                 default:
                     break;
 
             }
+
         }
     }
 }
