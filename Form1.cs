@@ -1503,7 +1503,11 @@ namespace EngineWindowsApplication1
             //设置当前状态为标识要素
             mapOperatorType = MapOperatorType.IdentifyFeature;
         }
-
+        /// <summary>
+        /// 要素浏览
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void menuFeatureBrowse_Click(object sender, EventArgs e)
         {
             ILayer layer = GetSelectedLayer();
