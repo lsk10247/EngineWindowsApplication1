@@ -452,7 +452,7 @@ namespace EngineWindowsApplication1
             // menuFeatureNew
             // 
             this.menuFeatureNew.Name = "menuFeatureNew";
-            this.menuFeatureNew.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureNew.Size = new System.Drawing.Size(122, 26);
             this.menuFeatureNew.Text = "ÃÌº”";
             this.menuFeatureNew.Click += new System.EventHandler(this.menuFeatureNew_Click);
             // 
@@ -462,20 +462,20 @@ namespace EngineWindowsApplication1
             this.menuFeatureEditByLocation,
             this.menuFeatureEditByRectangle});
             this.menuFeatureEdit.Name = "menuFeatureEdit";
-            this.menuFeatureEdit.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureEdit.Size = new System.Drawing.Size(122, 26);
             this.menuFeatureEdit.Text = "±‡º≠";
             // 
             // menuFeatureEditByLocation
             // 
             this.menuFeatureEditByLocation.Name = "menuFeatureEditByLocation";
-            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureEditByLocation.Size = new System.Drawing.Size(152, 26);
             this.menuFeatureEditByLocation.Text = "µ„—°±‡º≠";
             this.menuFeatureEditByLocation.Click += new System.EventHandler(this.menuFeatureEditByLocation_Click);
             // 
             // menuFeatureEditByRectangle
             // 
             this.menuFeatureEditByRectangle.Name = "menuFeatureEditByRectangle";
-            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureEditByRectangle.Size = new System.Drawing.Size(152, 26);
             this.menuFeatureEditByRectangle.Text = "øÚ—°±‡º≠";
             this.menuFeatureEditByRectangle.Click += new System.EventHandler(this.menuFeatureEditByRectangle_Click);
             // 
@@ -486,7 +486,7 @@ namespace EngineWindowsApplication1
             this.menuFeatureDeleteByRectangle,
             this.menuFeatureDeleteByPolygon});
             this.menuFeatureDelete.Name = "menuFeatureDelete";
-            this.menuFeatureDelete.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureDelete.Size = new System.Drawing.Size(122, 26);
             this.menuFeatureDelete.Text = "…æ≥˝";
             // 
             // menuFeatureDeleteByLocation
@@ -513,13 +513,13 @@ namespace EngineWindowsApplication1
             // menuFeatureBrowse
             // 
             this.menuFeatureBrowse.Name = "menuFeatureBrowse";
-            this.menuFeatureBrowse.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureBrowse.Size = new System.Drawing.Size(122, 26);
             this.menuFeatureBrowse.Text = "‰Ø¿¿";
             // 
             // menuFeatureIdentify
             // 
             this.menuFeatureIdentify.Name = "menuFeatureIdentify";
-            this.menuFeatureIdentify.Size = new System.Drawing.Size(224, 26);
+            this.menuFeatureIdentify.Size = new System.Drawing.Size(122, 26);
             this.menuFeatureIdentify.Text = "–≈œ¢";
             // 
             // Form1

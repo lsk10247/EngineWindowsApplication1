@@ -967,17 +967,17 @@ namespace EngineWindowsApplication1
 
         private void menuFeatureDeleteByLocation_Click(object sender, EventArgs e)
         {
-
+            mapOperatorType = MapOperatorType.DeleteFeatureByLocation;
         }
 
         private void menuFeatureDeleteByRectangle_Click(object sender, EventArgs e)
         {
-
+            mapOperatorType = MapOperatorType.DeleteFeatureByRectangle;
         }
 
         private void menuFeatureDeleteByPolygon_Click(object sender, EventArgs e)
         {
-
+            mapOperatorType = MapOperatorType.DeleteFeatureByPolygon;
         }
         // 向图层添加点要素
         private void AddPointToLayer(ILayer layer, double x, double y)
@@ -1062,12 +1062,13 @@ namespace EngineWindowsApplication1
         /// <param name="layer"></param>
         /// <param name="feature"></param>
         /// <param name="activeView"></param>
-        private void HighLightFeature(ILayer layer, IFeature feature, IActiveView activeView)
-        {
-            axMapControl1.Map.ClearSelection(); // 清除之前的选择
-            axMapControl1.Map.SelectFeature(layer, feature); // 高亮当前要素
-            activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null); // 刷新选择高亮
-        }
+        //private void HighLightFeature(ILayer layer, IFeature feature, IActiveView activeView)
+        //{
+        //    axMapControl1.Map.ClearSelection(); // 清除之前的选择
+        //    axMapControl1.Map.SelectFeature(layer, feature); // 高亮当前要素
+        //    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null); // 刷新选择高亮
+        //}
+
         /// <summary>
         /// 点选编辑要素主函数
         /// </summary>
@@ -1152,6 +1153,239 @@ namespace EngineWindowsApplication1
                 MessageBox.Show($"框选编辑要素失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        /// <summary>
+        /// 点选删除要素函数
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void DeleteFeatureByLocation_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
+        {
+            //创建一个点对象，用于存储鼠标点击的地图坐标
+            IPoint point = new PointClass();
+            point.PutCoords(e.mapX, e.mapY);
+            //将图层转换为该接口，该接口支持要素识别
+            IIdentify identifyLayer = (IIdentify)layer;
+            //在点击位置进行要素识别，返回识别结果
+            IArray array = identifyLayer.Identify(point);
+            //检查是否识别到要素
+            if (array != null && array.Count > 0)
+            {
+                //获取数组中的第一个元素
+                object obj = array.get_Element(0);
+                //将识别结果转换为要素识别的对象
+                IFeatureIdentifyObj fobj = obj as IFeatureIdentifyObj;
+                IRowIdentifyObject irow = fobj as IRowIdentifyObject;
+                //获取选中的要素
+                IFeature feature = irow.Row as IFeature;
+                //高亮显示选中的要素
+                HighlightSelectedFeatures(new List<IFeature> { feature }, layer, activeView);
+                //删除要素
+                DeleteSelectedFeatures(layer, activeView);
+            }
+        }
+        /// <summary>
+        /// 框选删除要素函数
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void DeleteFeatureByRectangle_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                //1. 让用户在地图上绘制矩形
+                IEnvelope envelope = axMapControl1.TrackRectangle();
+                if (envelope == null || envelope.IsEmpty)
+                {
+                    MessageBox.Show("未绘制有效的选择范围", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                //2. 创建空间过滤器
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = envelope;
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+                //3. 搜索要素
+                //此处改为false，禁用回收
+                IFeatureCursor featureCursor = featureLayer.FeatureClass.Search(spatialFilter, false);
+                IFeature feature = featureCursor.NextFeature();
+                //4. 创建要素集合
+                List<IFeature> features = new List<IFeature>();
+                //5. 将要素放入要素集合中
+                while (feature != null)
+                {
+                    features.Add(feature);
+                    feature = featureCursor.NextFeature();
+                }
+
+                if (features.Count > 0)
+                {
+                    MessageBox.Show($"选中{features.Count}个要素！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                //高亮显示选中的要素
+                HighlightSelectedFeatures(features, layer, activeView);
+                //HighlightSelectedFeatures(new List<IFeature> { feature }, layer, activeView);
+                //删除要素
+                DeleteSelectedFeatures(layer, activeView);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"框选删除要素失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        /// <summary>
+        /// 多边形选择删除要素
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void DeleteFeatureByPolygon_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                //1. 让用户在地图上绘制多边形
+                IPolygon polygon = (IPolygon)axMapControl1.TrackPolygon();
+                if (polygon == null || polygon.IsEmpty)
+                {
+                    MessageBox.Show("未绘制有效的选择范围", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                //2. 创建空间过滤器
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = polygon;
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+                //3. 搜索要素
+                IFeatureCursor featureCursor = featureLayer.FeatureClass.Search(spatialFilter, false);
+                IFeature feature = featureCursor.NextFeature();
+                //4. 创建要素集合
+                List<IFeature> features = new List<IFeature>();
+                //5. 将要素放入要素集合中
+                while (feature != null)
+                {
+                    features.Add(feature);
+                    feature = featureCursor.NextFeature();
+                }
+
+                if (features.Count > 0)
+                {
+                    MessageBox.Show($"选中{features.Count}个要素！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                //高亮显示选中的要素
+                HighlightSelectedFeatures(features, layer, activeView);
+                //删除要素
+                DeleteSelectedFeatures(layer, activeView);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"多边形选择删除要素失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        /// <summary>
+        /// 高亮选中的要素
+        /// </summary>
+        /// <param name="features"></param>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void HighlightSelectedFeatures(List<IFeature> features, ILayer layer, IActiveView activeView)
+        {
+            try
+            {
+                //清除之前的选择
+                axMapControl1.Map.ClearSelection();
+                //高亮所有选中的要素
+                foreach (IFeature feature in features)
+                {
+                    axMapControl1.Map.SelectFeature(layer, feature);
+                }
+                //刷新
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"高亮选中要素失败:{ex.Message}！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        /// <summary>
+        /// 批量删除选中要素
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void DeleteSelectedFeatures(ILayer layer, IActiveView activeView)
+        {
+            try
+            {
+                IMap map = axMapControl1.Map;
+                //检查是否有选中的要素
+                if(map.SelectionCount == 0)
+                {
+                    MessageBox.Show("没有选中要素！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                //确认删除
+                if(MessageBox.Show($"确定要删除选中的{map.SelectionCount}个要素吗？", "确认删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+                    axMapControl1.Map.ClearSelection();
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                    return;
+                }
+
+                IWorkspaceEdit workspaceEdit = null;
+                bool intEditSession = false;
+
+                //获取工作空间编辑接口
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                IDataset dataset = featureLayer.FeatureClass as IDataset;
+                workspaceEdit = dataset.Workspace as IWorkspaceEdit;
+
+                if(workspaceEdit == null)
+                {
+                    MessageBox.Show("工作空间不支持编辑！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                //检查编辑会话状态
+                intEditSession = workspaceEdit.IsBeingEdited();
+                if(!intEditSession)
+                {
+                    workspaceEdit.StartEditing(true);
+                }
+                //开始编辑操作
+                workspaceEdit.StartEditOperation();
+
+                //获取选中的要素并删除
+                IEnumFeature enumFeature = map.FeatureSelection as IEnumFeature;
+                enumFeature.Reset();
+                IFeature feature = enumFeature.Next();
+                int deleteCount = 0;
+                while(feature != null)
+                {
+                    feature.Delete();
+                    feature = enumFeature.Next();
+                    deleteCount++;
+                }
+                //停止编辑操作
+                workspaceEdit.StopEditOperation();
+                //如果之前不在编辑会话，停止编辑并保存
+                if(!intEditSession)
+                {
+                    workspaceEdit.StopEditing(true);
+                }
+                //清除选择并更新地图
+                map.ClearSelection();
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                activeView.Refresh();
+                MessageBox.Show($"成功删除{deleteCount}个要素！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"删除选中要素失败:{ex.Message}！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
         // 获取工作空间编辑接口
         private IWorkspaceEdit GetWorkspaceEdit(IFeatureClass featureClass)
@@ -1189,32 +1423,25 @@ namespace EngineWindowsApplication1
                     break;
                 case MapOperatorType.CreatePolygon:
                     break;
-                //点选要素
+                //点选编辑要素
                 case MapOperatorType.SelectFeatureByLocation:
                     SelectFeatureByLocation_Func(e, layer, activeView);
                     break;
+                //框选编辑要素
                 case MapOperatorType.SelectFeatureByRectangle:
                     SelectFeatureByRectangle_Func(e, layer, activeView);
                     break;
+                //点选删除要素
                 case MapOperatorType.DeleteFeatureByLocation:
-                    //创建一个点对象，用于存储鼠标点击的地图坐标
-                    IPoint point = new PointClass();
-                    point.PutCoords(e.mapX, e.mapY);
-                    //将图层转换为该接口，该接口支持要素识别
-                    IIdentify identifyLayer = (IIdentify)layer;
-                    //在点击位置进行要素识别，返回识别结果
-                    IArray array = identifyLayer.Identify(point);
-                    //检查是否识别到要素
-                    if (array != null && array.Count > 0)
-                    {
-                        //获取数组中的第一个元素
-                        object obj = array.get_Element(0);
-                        //将识别结果转换为要素识别的对象
-                        IFeatureIdentifyObj fobj = obj as IFeatureIdentifyObj;
-                        IRowIdentifyObject irow = fobj as IRowIdentifyObject;
-                        //获取选中的要素
-                        IFeature feature = irow.Row as IFeature;
-                    }
+                    DeleteFeatureByLocation_Func(e, layer, activeView);
+                    break;
+                //框选删除要素
+                case MapOperatorType.DeleteFeatureByRectangle:
+                    DeleteFeatureByRectangle_Func(e, layer, activeView);
+                    break;
+                //多边形选择删除要素
+                case MapOperatorType.DeleteFeatureByPolygon:
+                    DeleteFeatureByPolygon_Func(e, layer, activeView);
                     break;
                 default:
                     break;
