@@ -7,11 +7,8 @@ using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Geometry;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
 
 namespace EngineWindowsApplication1
@@ -19,6 +16,11 @@ namespace EngineWindowsApplication1
     public partial class Form1 : Form
     {
         MapOperatorType mapOperatorType;
+
+        // 用于存储折线绘制过程中的临时点集合
+        private List<IPoint> polylinePoints = new List<IPoint>();
+        // 用于存储多边形绘制过程中的临时点集合
+        private List<IPoint> polygonPoints = new List<IPoint>();
         public Form1()
         {
             InitializeComponent();
@@ -27,7 +29,7 @@ namespace EngineWindowsApplication1
 
             axTOCControl1.SetBuddyControl(axMapControl1);
 
-            //axMapControl2.AutoMouseWheel = false;
+            axMapControl2.AutoMouseWheel = false;
         }
         private void SetupStatusStrip()
         {
@@ -802,7 +804,6 @@ namespace EngineWindowsApplication1
                 toolStripStatusLabel2.Text = "坐标: (无法获取)";
             }
         }
-
         private void axMapControl2_OnMouseMove(object sender, IMapControlEvents2_OnMouseMoveEvent e)
         {
             try
@@ -940,8 +941,8 @@ namespace EngineWindowsApplication1
                 // 如果不是要素图层（如图栅格图层等）
                 MessageBox.Show("请选择要素图层");
             }
-            FormNewFeatureClass formNewFeatureClass = new FormNewFeatureClass();
-            formNewFeatureClass.Show();
+            //FormNewFeatureClass formNewFeatureClass = new FormNewFeatureClass();
+            //formNewFeatureClass.Show();
         }
         /// <summary>
         /// 点选编辑按钮响应函数
@@ -1461,8 +1462,26 @@ namespace EngineWindowsApplication1
                     }
                     break;
                 case MapOperatorType.CreatePolyline:
+                    if (layer != null && e.button == 1) // 左键开始绘制
+                    {
+                        // 使用 TrackLine 绘制折线
+                        IPolyline polyline = axMapControl1.TrackLine() as IPolyline;
+                        if (polyline != null)
+                        {
+                            AddPolylineToLayer(layer, polyline);
+                        }
+                    }
                     break;
                 case MapOperatorType.CreatePolygon:
+                    if (layer != null && e.button == 1) // 左键开始绘制
+                    {
+                        // 使用 TrackPolygon 绘制多边形
+                        IPolygon polygon = axMapControl1.TrackPolygon() as IPolygon;
+                        if (polygon != null)
+                        {
+                            AddPolygonToLayer(layer, polygon);
+                        }
+                    }
                     break;
                 //点选编辑要素
                 case MapOperatorType.SelectFeatureByLocation:
@@ -1493,6 +1512,224 @@ namespace EngineWindowsApplication1
             }
 
         }
+        private void AddPolylineToLayer(ILayer layer, IPolyline polyline)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null) return;
+
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                if (featureClass.ShapeType != esriGeometryType.esriGeometryPolyline)
+                {
+                    MessageBox.Show("当前图层不是线图层！");
+                    return;
+                }
+
+                // 使用与多边形相同的兼容性处理方法
+                IPolyline finalPolyline = EnsureZValueCompatibility(polyline, featureClass);
+                IPolyline compatiblePolyline = CreateCompatibleGeometry(featureClass, finalPolyline) as IPolyline;
+                if (compatiblePolyline == null) return;
+
+                // 确保几何体有效
+                ITopologicalOperator topoOp = compatiblePolyline as ITopologicalOperator;
+                if (topoOp != null)
+                {
+                    topoOp.Simplify();
+                }
+
+                // 添加要素
+                IFeature feature = featureClass.CreateFeature();
+                feature.Shape = compatiblePolyline;
+                feature.Store();
+
+                // 刷新地图
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+
+                MessageBox.Show("折线添加成功！");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("添加折线失败：" + ex.Message);
+            }
+            mapOperatorType = MapOperatorType.Default;
+        }
+
+        private IPolyline EnsureZValueCompatibility(IPolyline polyline, IFeatureClass featureClass)
+        {
+            try
+            {
+                // 方法1：检查要素类是否需要 Z 值
+                bool requiresZ = CheckIfFeatureClassRequiresZ(featureClass);
+
+                if (requiresZ)
+                {
+                    // 如果要素类需要 Z 值，确保几何体有 Z 值
+                    //IZAware zAware = polyline as IZAware;
+                    //if (zAware != null && !zAware.ZAware)
+                    //{
+                    //    zAware.ZAware = true;
+                    //}
+                    //// 确保所有点都有 Z 值
+                    //IPointCollection pointCollection = polyline as IPointCollection;
+                    //for (int i = 0; i < pointCollection.PointCount; i++)
+                    //{
+                    //    IPoint point = pointCollection.get_Point(i);
+                    //    IZAware pointZAware = point as IZAware;
+                    //    if (pointZAware != null && !pointZAware.ZAware)
+                    //    {
+                    //        pointZAware.ZAware = true;
+                    //        if (double.IsNaN(point.Z))
+                    //        {
+                    //            point.Z = 0.0; // 设置默认 Z 值
+                    //        }
+                    //    }
+                    //}
+                    return CreateNewPolylineWithZ(polyline, featureClass);
+                }
+
+                return polyline;
+            }
+            catch (Exception ex)
+            {
+                // 如果失败，尝试创建新的几何体
+                return CreateNewPolylineWithZ(polyline, featureClass);
+            }
+        }
+
+        private IPolyline CreateNewPolylineWithZ(IPolyline sourcePolyline, IFeatureClass featureClass)
+        {
+            try
+            {
+                // 创建新的折线
+                IPolyline newPolyline = new PolylineClass();
+
+                // 设置为 Z aware
+                IZAware zAware = newPolyline as IZAware;
+                if (zAware != null)
+                {
+                    zAware.ZAware = true;
+                }
+
+                // 复制点
+                IPointCollection sourcePoints = sourcePolyline as IPointCollection;
+                IPointCollection targetPoints = newPolyline as IPointCollection;
+
+                for (int i = 0; i < sourcePoints.PointCount; i++)
+                {
+                    IPoint sourcePoint = sourcePoints.get_Point(i);
+                    IPoint newPoint = new PointClass();
+                    newPoint.X = sourcePoint.X;
+                    newPoint.Y = sourcePoint.Y;
+                    newPoint.Z = 0.0; // 设置默认 Z 值
+
+                    // 设置为 Z aware
+                    IZAware pointZAware = newPoint as IZAware;
+                    if (pointZAware != null)
+                    {
+                        pointZAware.ZAware = true;
+                    }
+
+                    targetPoints.AddPoint(newPoint);
+                }
+
+                return newPolyline;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("创建带 Z 值的折线失败: " + ex.Message);
+            }
+        }
+
+        private bool CheckIfFeatureClassRequiresZ(IFeatureClass featureClass)
+        {
+            string shapeFieldName = featureClass.ShapeFieldName;
+            if (featureClass.Fields.get_Field(featureClass.FindField(shapeFieldName)).GeometryDef.HasZ)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private void AddPolygonToLayer(ILayer layer, IPolygon polygon)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null) return;
+
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                if (featureClass.ShapeType != esriGeometryType.esriGeometryPolygon)
+                {
+                    MessageBox.Show("当前图层不是面图层！");
+                    return;
+                }
+
+                // 确保几何体与要素类兼容
+                IPolygon compatiblePolygon = CreateCompatibleGeometry(featureClass, polygon) as IPolygon;
+                if (compatiblePolygon == null) return;
+
+                // 确保多边形闭合
+                ITopologicalOperator topoOp = compatiblePolygon as ITopologicalOperator;
+                if (topoOp != null)
+                {
+                    topoOp.Simplify();
+                }
+
+                // 添加要素
+                IFeature feature = featureClass.CreateFeature();
+                feature.Shape = compatiblePolygon;
+                feature.Store();
+
+                // 刷新地图
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+
+                MessageBox.Show("多边形添加成功！");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("添加多边形失败：" + ex.Message);
+            }
+            mapOperatorType = MapOperatorType.Default;
+        }
+
+        private IGeometry CreateCompatibleGeometry(IFeatureClass featureClass, IGeometry geometry)
+        {
+            try
+            {
+                // 方法1：使用要素模板创建兼容几何体
+                IFeature templateFeature = featureClass.CreateFeature();
+                IGeometry templateGeometry = templateFeature.ShapeCopy;
+
+                if (templateGeometry != null)
+                {
+                    IClone clone = templateGeometry as IClone;
+                    IGeometry compatibleGeometry = clone.Clone() as IGeometry;
+
+                    // 复制坐标
+                    IPointCollection sourcePoints = geometry as IPointCollection;
+                    IPointCollection targetPoints = compatibleGeometry as IPointCollection;
+
+                    if (sourcePoints != null && targetPoints != null)
+                    {
+                        targetPoints.RemovePoints(0, targetPoints.PointCount);
+                        for (int i = 0; i < sourcePoints.PointCount; i++)
+                        {
+                            targetPoints.AddPoint(sourcePoints.get_Point(i));
+                        }
+                    }
+
+                    return compatibleGeometry;
+                }
+            }
+            catch
+            {
+                // 如果失败，返回原始几何体
+            }
+
+            return geometry;
+        }
+
         /// <summary>
         /// 标识按钮响应函数
         /// </summary>
