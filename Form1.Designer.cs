@@ -519,8 +519,9 @@ namespace EngineWindowsApplication1
             // menuFeatureIdentify
             // 
             this.menuFeatureIdentify.Name = "menuFeatureIdentify";
-            this.menuFeatureIdentify.Size = new System.Drawing.Size(122, 26);
+            this.menuFeatureIdentify.Size = new System.Drawing.Size(224, 26);
             this.menuFeatureIdentify.Text = "пео╒";
+            this.menuFeatureIdentify.Click += new System.EventHandler(this.menuFeatureIdentify_Click);
             // 
             // Form1
             // 

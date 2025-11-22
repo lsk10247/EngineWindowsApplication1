@@ -1386,6 +1386,47 @@ namespace EngineWindowsApplication1
                 MessageBox.Show($"删除选中要素失败:{ex.Message}！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        /// <summary>
+        /// 标识并显示要素信息
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="layer"></param>
+        /// <param name="activeView"></param>
+        private void IdentifyFeature_Func(IMapControlEvents2_OnMouseDownEvent e, ILayer layer, IActiveView activeView)
+        {
+            //创建一个点对象，用于存储鼠标点击的地图坐标
+            IPoint point = new PointClass();
+            point.PutCoords(e.mapX, e.mapY);
+            //将图层转换为该接口，该接口支持要素识别
+            IIdentify identifyLayer = (IIdentify)layer;
+            //在点击位置进行要素识别，返回识别结果
+            IArray array = identifyLayer.Identify(point);
+            //检查是否识别到要素
+            if (array != null && array.Count > 0)
+            {
+                //获取数组中的第一个元素
+                object obj = array.get_Element(0);
+                //将识别结果转换为要素识别的对象
+                IFeatureIdentifyObj fobj = obj as IFeatureIdentifyObj;
+                IRowIdentifyObject irow = fobj as IRowIdentifyObject;
+                //获取选中的要素
+                IFeature feature = irow.Row as IFeature;
+                //高亮显示选中的要素
+                this.axMapControl1.Map.SelectFeature(layer, feature);
+
+                //刷新地图显示
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                //打开标识要素窗体
+                using (FormIdentifyFeature identifyForm = new FormIdentifyFeature(feature))
+                {
+                    identifyForm.ShowDialog();
+                    this.axMapControl1.Map.ClearSelection();
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                    activeView.PartialRefresh(esriViewDrawPhase.esriViewGeography, null, null);
+                }
+            }
+        }
 
         // 获取工作空间编辑接口
         private IWorkspaceEdit GetWorkspaceEdit(IFeatureClass featureClass)
@@ -1443,11 +1484,23 @@ namespace EngineWindowsApplication1
                 case MapOperatorType.DeleteFeatureByPolygon:
                     DeleteFeatureByPolygon_Func(e, layer, activeView);
                     break;
+                case MapOperatorType.IdentifyFeature:
+                    IdentifyFeature_Func(e, layer, activeView);
+                    break;
                 default:
                     break;
 
             }
 
+        }
+        /// <summary>
+        /// 标识按钮响应函数
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void menuFeatureIdentify_Click(object sender, EventArgs e)
+        {
+            mapOperatorType = MapOperatorType.IdentifyFeature;
         }
     }
 }
