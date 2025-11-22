@@ -1500,6 +1500,7 @@ namespace EngineWindowsApplication1
         /// <param name="e"></param>
         private void menuFeatureIdentify_Click(object sender, EventArgs e)
         {
+            //设置当前状态为标识要素
             mapOperatorType = MapOperatorType.IdentifyFeature;
         }
     }
