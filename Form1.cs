@@ -1503,5 +1503,26 @@ namespace EngineWindowsApplication1
             //设置当前状态为标识要素
             mapOperatorType = MapOperatorType.IdentifyFeature;
         }
+
+        private void menuFeatureBrowse_Click(object sender, EventArgs e)
+        {
+            ILayer layer = GetSelectedLayer();
+            if (layer == null)
+            {
+                MessageBox.Show("请先在TOC中选择要素图层！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            IFeatureLayer featureLayer = layer as IFeatureLayer;
+            if (featureLayer == null)
+            {
+                MessageBox.Show("选中的图层不是要素图层！", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            // 打开浏览窗口
+            using (FormFeatureBrowse browseForm = new FormFeatureBrowse(featureLayer))
+            {
+                browseForm.ShowDialog();
+            }
+        }
     }
 }

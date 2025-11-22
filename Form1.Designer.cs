@@ -112,7 +112,7 @@ namespace EngineWindowsApplication1
             // 
             this.toolStripContainer1.ContentPanel.Controls.Add(this.toolStripContainer2);
             this.toolStripContainer1.ContentPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
-            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(2524, 1555);
+            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(2524, 1552);
             this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer1.Location = new System.Drawing.Point(0, 0);
             this.toolStripContainer1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
@@ -166,12 +166,12 @@ namespace EngineWindowsApplication1
             // 
             this.toolStripContainer2.ContentPanel.Controls.Add(this.splitContainer1);
             this.toolStripContainer2.ContentPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
-            this.toolStripContainer2.ContentPanel.Size = new System.Drawing.Size(2524, 1525);
+            this.toolStripContainer2.ContentPanel.Size = new System.Drawing.Size(2524, 1522);
             this.toolStripContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer2.Location = new System.Drawing.Point(0, 0);
             this.toolStripContainer2.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.toolStripContainer2.Name = "toolStripContainer2";
-            this.toolStripContainer2.Size = new System.Drawing.Size(2524, 1555);
+            this.toolStripContainer2.Size = new System.Drawing.Size(2524, 1552);
             this.toolStripContainer2.TabIndex = 0;
             this.toolStripContainer2.Text = "toolStripContainer2";
             // 
@@ -193,7 +193,7 @@ namespace EngineWindowsApplication1
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.splitContainer3);
-            this.splitContainer1.Size = new System.Drawing.Size(2524, 1525);
+            this.splitContainer1.Size = new System.Drawing.Size(2524, 1522);
             this.splitContainer1.SplitterDistance = 840;
             this.splitContainer1.SplitterWidth = 8;
             this.splitContainer1.TabIndex = 0;
@@ -213,8 +213,8 @@ namespace EngineWindowsApplication1
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.axMapControl2);
-            this.splitContainer2.Size = new System.Drawing.Size(840, 1525);
-            this.splitContainer2.SplitterDistance = 927;
+            this.splitContainer2.Size = new System.Drawing.Size(840, 1522);
+            this.splitContainer2.SplitterDistance = 925;
             this.splitContainer2.SplitterWidth = 8;
             this.splitContainer2.TabIndex = 0;
             // 
@@ -225,7 +225,7 @@ namespace EngineWindowsApplication1
             this.axTOCControl1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.axTOCControl1.Name = "axTOCControl1";
             this.axTOCControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axTOCControl1.OcxState")));
-            this.axTOCControl1.Size = new System.Drawing.Size(840, 927);
+            this.axTOCControl1.Size = new System.Drawing.Size(840, 925);
             this.axTOCControl1.TabIndex = 0;
             // 
             // axMapControl2
@@ -235,7 +235,7 @@ namespace EngineWindowsApplication1
             this.axMapControl2.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.axMapControl2.Name = "axMapControl2";
             this.axMapControl2.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axMapControl2.OcxState")));
-            this.axMapControl2.Size = new System.Drawing.Size(840, 590);
+            this.axMapControl2.Size = new System.Drawing.Size(840, 589);
             this.axMapControl2.TabIndex = 0;
             this.axMapControl2.OnMouseMove += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnMouseMoveEventHandler(this.axMapControl2_OnMouseMove);
             // 
@@ -255,7 +255,7 @@ namespace EngineWindowsApplication1
             // 
             this.splitContainer3.Panel2.Controls.Add(this.axLicenseControl1);
             this.splitContainer3.Panel2.Controls.Add(this.axMapControl1);
-            this.splitContainer3.Size = new System.Drawing.Size(1676, 1525);
+            this.splitContainer3.Size = new System.Drawing.Size(1676, 1522);
             this.splitContainer3.SplitterDistance = 40;
             this.splitContainer3.SplitterWidth = 8;
             this.splitContainer3.TabIndex = 0;
@@ -287,7 +287,7 @@ namespace EngineWindowsApplication1
             this.axMapControl1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.axMapControl1.Name = "axMapControl1";
             this.axMapControl1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axMapControl1.OcxState")));
-            this.axMapControl1.Size = new System.Drawing.Size(1676, 1477);
+            this.axMapControl1.Size = new System.Drawing.Size(1676, 1474);
             this.axMapControl1.TabIndex = 0;
             this.axMapControl1.OnMouseDown += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnMouseDownEventHandler(this.axMapControl1_OnMouseDown);
             this.axMapControl1.OnMouseMove += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnMouseMoveEventHandler(this.axMapControl1_OnMouseMove);
@@ -335,7 +335,7 @@ namespace EngineWindowsApplication1
             this.要素管理ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(2524, 39);
+            this.menuStrip1.Size = new System.Drawing.Size(2524, 42);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -347,7 +347,7 @@ namespace EngineWindowsApplication1
             this.menuFileSave,
             this.menuFileExit});
             this.文件ToolStripMenuItem.Name = "文件ToolStripMenuItem";
-            this.文件ToolStripMenuItem.Size = new System.Drawing.Size(82, 35);
+            this.文件ToolStripMenuItem.Size = new System.Drawing.Size(82, 38);
             this.文件ToolStripMenuItem.Text = "文件";
             // 
             // menuFileNew
@@ -387,7 +387,7 @@ namespace EngineWindowsApplication1
             this.menuLayerVisible,
             this.menuLayerThum});
             this.图层ToolStripMenuItem.Name = "图层ToolStripMenuItem";
-            this.图层ToolStripMenuItem.Size = new System.Drawing.Size(82, 35);
+            this.图层ToolStripMenuItem.Size = new System.Drawing.Size(82, 38);
             this.图层ToolStripMenuItem.Text = "图层";
             // 
             // menuLayerAllShp
@@ -435,7 +435,7 @@ namespace EngineWindowsApplication1
             // 要素类管理ToolStripMenuItem
             // 
             this.要素类管理ToolStripMenuItem.Name = "要素类管理ToolStripMenuItem";
-            this.要素类管理ToolStripMenuItem.Size = new System.Drawing.Size(154, 35);
+            this.要素类管理ToolStripMenuItem.Size = new System.Drawing.Size(154, 38);
             this.要素类管理ToolStripMenuItem.Text = "要素类管理";
             // 
             // 要素管理ToolStripMenuItem
@@ -447,13 +447,13 @@ namespace EngineWindowsApplication1
             this.menuFeatureBrowse,
             this.menuFeatureIdentify});
             this.要素管理ToolStripMenuItem.Name = "要素管理ToolStripMenuItem";
-            this.要素管理ToolStripMenuItem.Size = new System.Drawing.Size(130, 35);
+            this.要素管理ToolStripMenuItem.Size = new System.Drawing.Size(130, 38);
             this.要素管理ToolStripMenuItem.Text = "要素管理";
             // 
             // menuFeatureNew
             // 
             this.menuFeatureNew.Name = "menuFeatureNew";
-            this.menuFeatureNew.Size = new System.Drawing.Size(195, 44);
+            this.menuFeatureNew.Size = new System.Drawing.Size(359, 44);
             this.menuFeatureNew.Text = "添加";
             this.menuFeatureNew.Click += new System.EventHandler(this.menuFeatureNew_Click);
             // 
@@ -463,7 +463,7 @@ namespace EngineWindowsApplication1
             this.menuFeatureEditByLocation,
             this.menuFeatureEditByRectangle});
             this.menuFeatureEdit.Name = "menuFeatureEdit";
-            this.menuFeatureEdit.Size = new System.Drawing.Size(195, 44);
+            this.menuFeatureEdit.Size = new System.Drawing.Size(359, 44);
             this.menuFeatureEdit.Text = "编辑";
             // 
             // menuFeatureEditByLocation
@@ -487,7 +487,7 @@ namespace EngineWindowsApplication1
             this.menuFeatureDeleteByRectangle,
             this.menuFeatureDeleteByPolygon});
             this.menuFeatureDelete.Name = "menuFeatureDelete";
-            this.menuFeatureDelete.Size = new System.Drawing.Size(195, 44);
+            this.menuFeatureDelete.Size = new System.Drawing.Size(359, 44);
             this.menuFeatureDelete.Text = "删除";
             // 
             // menuFeatureDeleteByLocation
@@ -514,13 +514,14 @@ namespace EngineWindowsApplication1
             // menuFeatureBrowse
             // 
             this.menuFeatureBrowse.Name = "menuFeatureBrowse";
-            this.menuFeatureBrowse.Size = new System.Drawing.Size(195, 44);
+            this.menuFeatureBrowse.Size = new System.Drawing.Size(359, 44);
             this.menuFeatureBrowse.Text = "浏览";
+            this.menuFeatureBrowse.Click += new System.EventHandler(this.menuFeatureBrowse_Click);
             // 
             // menuFeatureIdentify
             // 
             this.menuFeatureIdentify.Name = "menuFeatureIdentify";
-            this.menuFeatureIdentify.Size = new System.Drawing.Size(195, 44);
+            this.menuFeatureIdentify.Size = new System.Drawing.Size(359, 44);
             this.menuFeatureIdentify.Text = "信息";
             this.menuFeatureIdentify.Click += new System.EventHandler(this.menuFeatureIdentify_Click);
             // 
