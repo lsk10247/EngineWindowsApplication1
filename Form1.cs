@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace EngineWindowsApplication1
@@ -21,6 +22,11 @@ namespace EngineWindowsApplication1
         private List<IPoint> polylinePoints = new List<IPoint>();
         // 用于存储多边形绘制过程中的临时点集合
         private List<IPoint> polygonPoints = new List<IPoint>();
+
+        //用于多义线缓冲区查询
+        private MapOperatorType m_currentOperator = MapOperatorType.Default;
+        private IGraphicsContainer m_graphicsContainer;
+        private IElement m_bufferElement;
         public Form1()
         {
             InitializeComponent();
@@ -136,7 +142,15 @@ namespace EngineWindowsApplication1
             /// <summary>
             /// 多边形选择删除要素
             /// </summary>
-            DeleteFeatureByPolygon
+            DeleteFeatureByPolygon,
+            /// <summary>
+            /// 多义线缓冲区查询
+            /// </summary>
+            QueryByPolylineBuffer,
+            /// <summary>
+            /// 获取点击位置高程
+            /// </summary>
+            GetClickPointElevation,
         }
 
         private void menuFileOpen_Click(object sender, EventArgs e)
@@ -1506,6 +1520,12 @@ namespace EngineWindowsApplication1
                 case MapOperatorType.IdentifyFeature:
                     IdentifyFeature_Func(e, layer, activeView);
                     break;
+                case MapOperatorType.QueryByPolylineBuffer:
+                    HandlePolylineBufferMouseDown(e);
+                    break;
+                case MapOperatorType.GetClickPointElevation:
+                    HandleGetElevationMouseDown(e);
+                    break;
                 default:
                     break;
 
@@ -1763,6 +1783,1165 @@ namespace EngineWindowsApplication1
             using (FormFeatureBrowse browseForm = new FormFeatureBrowse(featureLayer))
             {
                 browseForm.ShowDialog();
+            }
+        }
+
+        private void queryMax_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ILayer layer = GetSelectedLayer();
+                if (layer == null)
+                {
+                    MessageBox.Show("请先选择一个图层！");
+                    return;
+                }
+
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null || featureLayer.FeatureClass == null)
+                {
+                    MessageBox.Show("选择的图层不是有效的要素图层！");
+                    return;
+                }
+
+                // 检查是否为面图层
+                if (featureLayer.FeatureClass.ShapeType != esriGeometryType.esriGeometryPolygon)
+                {
+                    MessageBox.Show("请选择一个面图层！");
+                    return;
+                }
+
+                // 查询最大面要素
+                IFeature maxFeature = FindMaxAreaFeature(featureLayer.FeatureClass);
+
+                if (maxFeature != null)
+                {
+                    // 高亮显示最大面要素
+                    HighlightFeature(featureLayer, maxFeature);
+                    double area = GetFeatureArea(maxFeature);
+                    MessageBox.Show($"找到最大面要素，面积为：{area:F2} 平方单位");
+                }
+                else
+                {
+                    MessageBox.Show("未找到面要素！");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"查询最大面要素时出错：{ex.Message}");
+            }
+        }
+
+        private void queryMin_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ILayer layer = GetSelectedLayer();
+                if (layer == null)
+                {
+                    MessageBox.Show("请先选择一个图层！");
+                    return;
+                }
+
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null || featureLayer.FeatureClass == null)
+                {
+                    MessageBox.Show("选择的图层不是有效的要素图层！");
+                    return;
+                }
+
+                // 检查是否为面图层
+                if (featureLayer.FeatureClass.ShapeType != esriGeometryType.esriGeometryPolygon)
+                {
+                    MessageBox.Show("请选择一个面图层！");
+                    return;
+                }
+
+                // 查询最小面要素
+                IFeature minFeature = FindMinAreaFeature(featureLayer.FeatureClass);
+
+                if (minFeature != null)
+                {
+                    // 高亮显示最小面要素
+                    HighlightFeature(featureLayer, minFeature);
+                    double area = GetFeatureArea(minFeature);
+                    MessageBox.Show($"找到最小面要素，面积为：{area:F2} 平方单位");
+                }
+                else
+                {
+                    MessageBox.Show("未找到面要素！");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"查询最小面要素时出错：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 查询最大面积的面要素
+        /// </summary>
+        private IFeature FindMaxAreaFeature(IFeatureClass featureClass)
+        {
+            IFeature maxFeature = null;
+            double maxArea = double.MinValue;
+
+            IFeatureCursor featureCursor = featureClass.Search(null, true);
+            IFeature feature = featureCursor.NextFeature();
+
+            while (feature != null)
+            {
+                double area = GetFeatureArea(feature);
+                if (area > maxArea)
+                {
+                    maxArea = area;
+                    maxFeature = feature;
+                }
+                feature = featureCursor.NextFeature();
+            }
+
+            // 释放游标
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+
+            return maxFeature;
+        }
+
+        /// <summary>
+        /// 查询最小面积的面要素
+        /// </summary>
+        private IFeature FindMinAreaFeature(IFeatureClass featureClass)
+        {
+            IFeature minFeature = null;
+            double minArea = double.MaxValue;
+
+            IFeatureCursor featureCursor = featureClass.Search(null, true);
+            IFeature feature = featureCursor.NextFeature();
+
+            while (feature != null)
+            {
+                double area = GetFeatureArea(feature);
+                if (area < minArea)
+                {
+                    minArea = area;
+                    minFeature = feature;
+                }
+                feature = featureCursor.NextFeature();
+            }
+
+            // 释放游标
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+
+            return minFeature;
+        }
+
+        /// <summary>
+        /// 获取面要素的面积
+        /// </summary>
+        private double GetFeatureArea(IFeature feature)
+        {
+            if (feature.Shape == null)
+                return 0;
+
+            IArea area = feature.Shape as IArea;
+            if (area != null)
+            {
+                return area.Area;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// 高亮显示要素
+        /// </summary>
+        private void HighlightFeature(IFeatureLayer featureLayer, IFeature feature)
+        {
+            // 获取地图控件
+            IMapControl3 mapControl = (IMapControl3)axMapControl1.Object; // 这里需要替换为您的实际地图控件
+
+            // 清除之前的选择
+            mapControl.Map.ClearSelection();
+
+            // 选择要素
+            featureLayer.Selectable = true;
+            mapControl.Map.SelectFeature(featureLayer, feature);
+
+            // 刷新地图显示
+            mapControl.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+        }
+
+        private void filterWrongHeightPoint_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ILayer layer = GetSelectedLayer();
+                if (layer == null)
+                {
+                    MessageBox.Show("请先选择一个图层！");
+                    return;
+                }
+
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+                if (featureLayer == null || featureLayer.FeatureClass == null)
+                {
+                    MessageBox.Show("选择的图层不是有效的要素图层！");
+                    return;
+                }
+
+                // 检查是否为点图层
+                if (featureLayer.FeatureClass.ShapeType != esriGeometryType.esriGeometryPoint)
+                {
+                    MessageBox.Show("请选择一个点图层！");
+                    return;
+                }
+
+                // 获取高程字段（假设字段名为"Elevation"或"高程"）
+                string elevationFieldName = GetElevationFieldName(featureLayer.FeatureClass);
+                if (string.IsNullOrEmpty(elevationFieldName))
+                {
+                    MessageBox.Show("未找到高程字段！请确保图层包含高程字段。");
+                    return;
+                }
+
+                // 设置参数（可以改为从界面输入）
+                int neighborCount = 10; // N近邻数量
+                double stdDevMultiple = 3.0; // 标准差倍数
+
+                // 执行异常值检测和过滤
+                int removedCount = DetectAndRemoveHeightOutliers(featureLayer, elevationFieldName, neighborCount, stdDevMultiple);
+
+                MessageBox.Show($"高程点异常值检测完成！共删除 {removedCount} 个异常点。");
+
+                // 刷新地图
+                RefreshMap();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"高程点异常值检测时出错：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 获取高程字段名称
+        /// </summary>
+        private string GetElevationFieldName(IFeatureClass featureClass)
+        {
+            // 常见的高程字段名称
+            string[] possibleFieldNames = { "Elevation", "高程", "HEIGHT", "Height", "ELEV", "Z", "ALTITUDE" };
+
+            for (int i = 0; i < featureClass.Fields.FieldCount; i++)
+            {
+                string fieldName = featureClass.Fields.get_Field(i).Name;
+                foreach (string possibleName in possibleFieldNames)
+                {
+                    if (fieldName.Equals(possibleName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return fieldName;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 检测并删除高程异常值
+        /// </summary>
+        private int DetectAndRemoveHeightOutliers(IFeatureLayer featureLayer, string elevationFieldName, int neighborCount, double stdDevMultiple)
+        {
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            int removedCount = 0;
+
+            // 获取所有高程点
+            List<IFeature> allFeatures = GetAllFeatures(featureClass);
+            if (allFeatures.Count == 0) return 0;
+
+            // 构建空间索引用于快速邻近搜索
+            ISpatialFilter spatialFilter = new SpatialFilterClass();
+            spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+
+            // 存储需要删除的要素OID
+            List<int> featuresToDelete = new List<int>();
+
+            // 遍历每个要素进行异常值检测
+            foreach (IFeature targetFeature in allFeatures)
+            {
+                try
+                {
+                    if (targetFeature == null) continue;
+
+                    // 获取目标点的高程值
+                    double targetElevation = GetFeatureElevation(targetFeature, elevationFieldName);
+                    if (double.IsNaN(targetElevation)) continue;
+
+                    // 获取N近邻
+                    List<IFeature> neighbors = FindNearestNeighbors(targetFeature, allFeatures, neighborCount);
+                    if (neighbors.Count < 3) continue; // 至少需要3个点才能计算标准差
+
+                    // 计算近邻的高程统计信息
+                    double avg, stdDev;
+                    CalculateElevationStatistics(neighbors, elevationFieldName, out avg, out stdDev);
+
+                    // 使用3倍标准差法判断异常值
+                    if (IsOutlier(targetElevation, avg, stdDev, stdDevMultiple))
+                    {
+                        featuresToDelete.Add(targetFeature.OID);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"处理要素OID{targetFeature.OID}时出错：{ex.Message}");
+                }
+            }
+
+            // 删除异常值要素
+            if (featuresToDelete.Count > 0)
+            {
+                removedCount = DeleteFeatures(featureClass, featuresToDelete);
+            }
+
+            return removedCount;
+        }
+
+        /// <summary>
+        /// 获取所有要素
+        /// </summary>
+        private List<IFeature> GetAllFeatures(IFeatureClass featureClass)
+        {
+            List<IFeature> features = new List<IFeature>();
+            IFeatureCursor featureCursor = null;
+
+            try
+            {
+                featureCursor = featureClass.Search(null, true);
+                IFeature feature = featureCursor.NextFeature();
+
+                while (feature != null)
+                {
+                    features.Add(feature);
+                    feature = featureCursor.NextFeature();
+                }
+            }
+            finally
+            {
+                if (featureCursor != null)
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+            }
+
+            return features;
+        }
+
+        /// <summary>
+        /// 查找最近邻的N个要素
+        /// </summary>
+        private List<IFeature> FindNearestNeighbors(IFeature targetFeature, List<IFeature> allFeatures, int neighborCount)
+        {
+            // 计算所有点到目标点的距离
+            var distances = new List<Tuple<double, IFeature>>();
+            IPoint targetPoint = targetFeature.Shape as IPoint;
+
+            foreach (IFeature feature in allFeatures)
+            {
+                if (feature.OID == targetFeature.OID) continue; // 排除自身
+
+                IPoint point = feature.Shape as IPoint;
+                if (point != null)
+                {
+                    double distance = CalculateDistance(targetPoint, point);
+                    distances.Add(new Tuple<double, IFeature>(distance, feature));
+                }
+            }
+
+            // 按距离排序并取前N个
+            return distances.OrderBy(d => d.Item1)
+                           .Take(neighborCount)
+                           .Select(d => d.Item2)
+                           .ToList();
+        }
+
+        /// <summary>
+        /// 计算两点之间的距离
+        /// </summary>
+        private double CalculateDistance(IPoint point1, IPoint point2)
+        {
+            double dx = point1.X - point2.X;
+            double dy = point1.Y - point2.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>
+        /// 获取要素的高程值
+        /// </summary>
+        private double GetFeatureElevation(IFeature feature, string elevationFieldName)
+        {
+            try
+            {
+                int fieldIndex = feature.Fields.FindField(elevationFieldName);
+                if (fieldIndex == -1) return double.NaN;
+
+                object value = feature.get_Value(fieldIndex);
+                if (value == null || value == DBNull.Value) return double.NaN;
+
+                return Convert.ToDouble(value);
+            }
+            catch
+            {
+                return double.NaN;
+            }
+        }
+
+        /// <summary>
+        /// 计算高程统计信息（均值和标准差）
+        /// </summary>
+        private void CalculateElevationStatistics(List<IFeature> features, string elevationFieldName, out double average, out double stdDev)
+        {
+            List<double> elevations = new List<double>();
+
+            foreach (IFeature feature in features)
+            {
+                double elevation = GetFeatureElevation(feature, elevationFieldName);
+                if (!double.IsNaN(elevation))
+                {
+                    elevations.Add(elevation);
+                }
+            }
+
+            if (elevations.Count == 0)
+            {
+                average = 0;
+                stdDev = 0;
+                return;
+            }
+
+            // 计算均值
+            average = elevations.Average();
+
+            // 计算标准差
+            double sumOfSquares = 0;
+            foreach (double elevation in elevations)
+            {
+                sumOfSquares += Math.Pow(elevation - average, 2);
+            }
+            stdDev = Math.Sqrt(sumOfSquares / elevations.Count);
+        }
+
+        /// <summary>
+        /// 判断是否为异常值
+        /// </summary>
+        private bool IsOutlier(double value, double average, double stdDev, double multiple)
+        {
+            if (stdDev == 0) return false; // 如果标准差为0，所有值都相同，没有异常值
+
+            double deviation = Math.Abs(value - average);
+            return deviation > (multiple * stdDev);
+        }
+
+        /// <summary>
+        /// 删除要素
+        /// </summary>
+        private int DeleteFeatures(IFeatureClass featureClass, List<int> oidsToDelete)
+        {
+            int deletedCount = 0;
+            IWorkspaceEdit workspaceEdit = null;
+
+            try
+            {
+                // 获取工作空间并开始编辑
+                IDataset dataset = (IDataset)featureClass;
+                workspaceEdit = (IWorkspaceEdit)dataset.Workspace;
+
+                bool inEditMode = workspaceEdit.IsBeingEdited();
+                if (!inEditMode)
+                {
+                    workspaceEdit.StartEditing(true);
+                    workspaceEdit.StartEditOperation();
+                }
+
+                // 删除要素
+                foreach (int oid in oidsToDelete)
+                {
+                    IFeature feature = featureClass.GetFeature(oid);
+                    if (feature != null)
+                    {
+                        feature.Delete();
+                        deletedCount++;
+                    }
+                }
+
+                if (!inEditMode)
+                {
+                    workspaceEdit.StopEditOperation();
+                    workspaceEdit.StopEditing(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"删除要素时出错：{ex.Message}");
+                // 回滚编辑
+                if (workspaceEdit != null && workspaceEdit.IsBeingEdited())
+                {
+                    workspaceEdit.AbortEditOperation();
+                    workspaceEdit.StopEditing(false);
+                }
+            }
+
+            return deletedCount;
+        }
+
+        /// <summary>
+        /// 刷新地图显示
+        /// </summary>
+        private void RefreshMap()
+        {
+            try
+            {
+                if (axMapControl1 != null)
+                {
+                    axMapControl1.ActiveView.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"刷新地图时出错：{ex.Message}");
+            }
+        }
+
+        private void startPolylineBufferQuery_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 设置当前操作类型
+                m_currentOperator = MapOperatorType.QueryByPolylineBuffer;
+
+                // 设置鼠标样式
+                axMapControl1.MousePointer = esriControlsMousePointer.esriPointerCrosshair;
+
+                MessageBox.Show("请在地图上绘制多义线进行缓冲区查询（单击开始，移动绘制，双击结束）");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"启动多义线缓冲区查询时出错：{ex.Message}");
+                m_currentOperator = MapOperatorType.Default;
+            }
+        }
+        private void HandlePolylineBufferMouseDown(IMapControlEvents2_OnMouseDownEvent e)
+        {
+            try
+            {
+                // 使用 TrackNew 方法绘制多义线
+                IRubberBand rubberBand = new RubberLineClass();
+                IGeometry geometry = rubberBand.TrackNew(axMapControl1.ActiveView.ScreenDisplay, null);
+
+                if (geometry != null && geometry is IPolyline polyline && polyline.Length > 0)
+                {
+                    // 直接执行查询
+                    ExecutePolylineBufferQuery(polyline);
+                }
+                else
+                {
+                    MessageBox.Show("绘制多义线失败或线长度为零！");
+                }
+
+                // 重置操作类型
+                CleanupPolylineBufferQuery();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"绘制多义线时出错：{ex.Message}");
+                CleanupPolylineBufferQuery();
+            }
+        }
+
+        private void axMapControl1_OnDoubleClick(object sender, IMapControlEvents2_OnDoubleClickEvent e)
+        {
+            if (m_currentOperator == MapOperatorType.QueryByPolylineBuffer)
+            {
+            }
+        }
+        private void ExecutePolylineBufferQuery(IPolyline polyline)
+        {
+            try
+            {
+                // 获取缓冲区距离
+                double bufferDistance = GetBufferDistanceFromUI();
+                if (bufferDistance <= 0) bufferDistance = 50; // 默认50米
+
+                // 创建缓冲区
+                IGeometry buffer = CreateBuffer(polyline, bufferDistance);
+                if (buffer == null)
+                {
+                    MessageBox.Show("创建缓冲区失败！");
+                    return;
+                }
+
+                // 显示缓冲区图形
+                DisplayBufferGraphic(buffer);
+
+                // 查询相交的建筑要素
+                ILayer buildingLayer = GetBuildingLayer();
+                if (buildingLayer == null)
+                {
+                    MessageBox.Show("未找到建筑图层！");
+                    return;
+                }
+
+                List<IFeature> intersectedBuildings = FindIntersectedBuildings(buildingLayer, buffer);
+
+                // 显示结果
+                DisplayQueryResults(intersectedBuildings, buildingLayer);
+
+                MessageBox.Show($"找到 {intersectedBuildings.Count} 个与缓冲区相交的建筑");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"执行多义线缓冲区查询时出错：{ex.Message}");
+            }
+        }
+
+        private double GetBufferDistanceFromUI()
+        {
+            // 这里可以添加从界面获取缓冲区距离的逻辑
+            // 例如从文本框、输入框等获取
+            // 暂时返回默认值
+            return 50;
+        }
+
+        private IGeometry CreateBuffer(IPolyline polyline, double distance)
+        {
+            try
+            {
+                ITopologicalOperator topologicalOperator = polyline as ITopologicalOperator;
+                if (topologicalOperator == null) return null;
+
+                IGeometry buffer = topologicalOperator.Buffer(distance);
+                return buffer;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"创建缓冲区时出错：{ex.Message}");
+                return null;
+            }
+        }
+        private ILayer GetBuildingLayer()
+        {
+            // 方法1：自动识别建筑图层
+            ILayer layer = FindBuildingLayerByNames();
+            if (layer != null) return layer;
+
+            // 方法2：使用当前选中图层
+            return GetSelectedLayer();
+        }
+
+        private ILayer FindBuildingLayerByNames()
+        {
+            if (axMapControl1 == null || axMapControl1.Map == null) return null;
+
+            string[] buildingLayerNames = { "建筑", "建筑物", "Building", "Buildings", "房屋", "房子", "building", "buildings" };
+
+            for (int i = 0; i < axMapControl1.Map.LayerCount; i++)
+            {
+                ILayer layer = axMapControl1.Map.get_Layer(i);
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+
+                if (featureLayer != null && featureLayer.FeatureClass != null)
+                {
+                    // 检查是否为面图层（建筑通常是面要素）
+                    if (featureLayer.FeatureClass.ShapeType == esriGeometryType.esriGeometryPolygon)
+                    {
+                        // 检查图层名称
+                        string layerName = layer.Name;
+                        foreach (string buildingName in buildingLayerNames)
+                        {
+                            if (layerName.IndexOf(buildingName, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return layer;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private List<IFeature> FindIntersectedBuildings(ILayer buildingLayer, IGeometry buffer)
+        {
+            List<IFeature> results = new List<IFeature>();
+            IFeatureCursor featureCursor = null;
+
+            try
+            {
+                IFeatureLayer featureLayer = buildingLayer as IFeatureLayer;
+                if (featureLayer?.FeatureClass == null) return results;
+
+                // 创建空间查询
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = buffer;
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+                spatialFilter.GeometryField = featureLayer.FeatureClass.ShapeFieldName;
+
+                // 执行查询
+                featureCursor = featureLayer.FeatureClass.Search(spatialFilter, true);
+                IFeature feature = featureCursor.NextFeature();
+
+                while (feature != null)
+                {
+                    results.Add(feature);
+                    feature = featureCursor.NextFeature();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"查询相交建筑时出错：{ex.Message}");
+            }
+            finally
+            {
+                if (featureCursor != null)
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+            }
+
+            return results;
+        }
+
+        private void DisplayBufferGraphic(IGeometry buffer)
+        {
+            try
+            {
+                m_graphicsContainer = axMapControl1.Map as IGraphicsContainer;
+                if (m_graphicsContainer == null) return;
+
+                // 清除之前的缓冲区图形
+                ClearBufferGraphic();
+
+                // 创建新的缓冲区图形元素
+                IFillShapeElement bufferElement = new PolygonElementClass();
+                bufferElement.Symbol = (IFillSymbol)GetBufferSymbol();
+
+                IElement element = bufferElement as IElement;
+                element.Geometry = buffer;
+
+                m_bufferElement = element;
+                m_graphicsContainer.AddElement(element, 0);
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"显示缓冲区图形时出错：{ex.Message}");
+            }
+        }
+
+        private ISymbol GetBufferSymbol()
+        {
+            // 创建缓冲区符号（半透明红色）
+            ISimpleFillSymbol fillSymbol = new SimpleFillSymbolClass();
+            fillSymbol.Color = GetRGBColor(255, 0, 0, 100); // 半透明红色
+            fillSymbol.Style = esriSimpleFillStyle.esriSFSSolid;
+
+            ISimpleLineSymbol outlineSymbol = new SimpleLineSymbolClass();
+            outlineSymbol.Color = GetRGBColor(255, 0, 0, 255); // 红色边框
+            outlineSymbol.Width = 2;
+            outlineSymbol.Style = esriSimpleLineStyle.esriSLSSolid;
+
+            fillSymbol.Outline = outlineSymbol;
+            return fillSymbol as ISymbol;
+        }
+
+        private IColor GetRGBColor(int red, int green, int blue, int alpha = 255)
+        {
+            IRgbColor rgbColor = new RgbColorClass();
+            rgbColor.Red = red;
+            rgbColor.Green = green;
+            rgbColor.Blue = blue;
+            return rgbColor as IColor;
+        }
+
+        private void DisplayQueryResults(List<IFeature> buildings, ILayer buildingLayer)
+        {
+            try
+            {
+                if (axMapControl1?.Map == null) return;
+
+                // 清除之前的选择
+                axMapControl1.Map.ClearSelection();
+
+                // 选择查询到的建筑要素
+                IFeatureLayer featureLayer = buildingLayer as IFeatureLayer;
+                if (featureLayer != null)
+                {
+                    foreach (IFeature building in buildings)
+                    {
+                        axMapControl1.Map.SelectFeature(featureLayer, building);
+                    }
+                }
+
+                // 刷新显示
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+
+                // 缩放到选中要素
+                //if (buildings.Count > 0)
+                //{
+                //    IEnvelope envelope = axMapControl1.Map.SelectionExtent;
+                //    if (envelope != null && !envelope.IsEmpty)
+                //    {
+                //        envelope.Expand(1.2, 1.2, true); // 放大1.2倍
+                //        axMapControl1.Extent = envelope;
+                //    }
+                //}
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"显示查询结果时出错：{ex.Message}");
+            }
+        }
+
+        private void CleanupPolylineBufferQuery()
+        {
+            m_currentOperator = MapOperatorType.Default;
+            axMapControl1.MousePointer = esriControlsMousePointer.esriPointerDefault;
+        }
+
+        private void ClearBufferGraphic()
+        {
+            try
+            {
+                if (m_graphicsContainer != null && m_bufferElement != null)
+                {
+                    m_graphicsContainer.DeleteElement(m_bufferElement);
+                    m_bufferElement = null;
+                    axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"清理缓冲区图形时出错：{ex.Message}");
+            }
+        }
+
+        // 可以添加一个清除按钮
+        private void clearBufferGraphic_Click(object sender, EventArgs e)
+        {
+            ClearBufferGraphic();
+            if (axMapControl1?.Map != null)
+            {
+                axMapControl1.Map.ClearSelection();
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
+            }
+        }
+
+        private void startGetElevation_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 设置当前操作类型
+                m_currentOperator = MapOperatorType.GetClickPointElevation;
+
+                // 设置鼠标样式
+                axMapControl1.MousePointer = esriControlsMousePointer.esriPointerCrosshair;
+
+                MessageBox.Show("请在地图上点击要查询高程的位置");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"启动高程查询时出错：{ex.Message}");
+                m_currentOperator = MapOperatorType.Default;
+            }
+        }
+        private void HandleGetElevationMouseDown(IMapControlEvents2_OnMouseDownEvent e)
+        {
+            try
+            {
+                if (e.button != 1) return; // 只处理左键点击
+
+                // 获取点击位置
+                IPoint clickPoint = axMapControl1.ActiveView.ScreenDisplay.DisplayTransformation.ToMapPoint(e.x, e.y);
+
+                // 获取高程图层
+                ILayer elevationLayer = GetElevationLayer();
+                if (elevationLayer == null)
+                {
+                    MessageBox.Show("未找到高程点图层！");
+                    return;
+                }
+
+                // 计算内插高程
+                double? elevation = CalculateInterpolatedElevation(clickPoint, elevationLayer, 8); // 使用8个最近点
+
+                if (elevation.HasValue)
+                {
+                    // 显示结果
+                    DisplayElevationResult(clickPoint, elevation.Value);
+                }
+                else
+                {
+                    MessageBox.Show("无法计算该位置的高程值！");
+                }
+
+                // 重置操作类型（保持在高程查询模式，可以连续点击）
+                // 如果希望单次查询，可以取消注释下一行
+                // CleanupElevationQuery();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"查询高程时出错：{ex.Message}");
+            }
+        }
+
+        private void CleanupElevationQuery()
+        {
+            m_currentOperator = MapOperatorType.Default;
+            axMapControl1.MousePointer = esriControlsMousePointer.esriPointerDefault;
+        }
+        /// <summary>
+        /// 使用反距离权重法计算内插高程
+        /// </summary>
+        /// <param name="targetPoint">目标点</param>
+        /// <param name="elevationLayer">高程点图层</param>
+        /// <param name="neighborCount">最近邻点数</param>
+        /// <returns>内插高程值</returns>
+        private double? CalculateInterpolatedElevation(IPoint targetPoint, ILayer elevationLayer, int neighborCount)
+        {
+            try
+            {
+                IFeatureLayer featureLayer = elevationLayer as IFeatureLayer;
+                if (featureLayer?.FeatureClass == null) return null;
+
+                // 获取高程字段
+                string elevationFieldName = GetElevationFieldName(featureLayer.FeatureClass);
+                if (string.IsNullOrEmpty(elevationFieldName)) return null;
+
+                // 搜索最近的高程点
+                List<Tuple<IFeature, double>> nearestPoints = FindNearestElevationPoints(
+                    targetPoint, featureLayer.FeatureClass, elevationFieldName, neighborCount);
+
+                if (nearestPoints.Count == 0) return null;
+
+                // 使用反距离权重法计算高程
+                return CalculateIDWElevation(targetPoint, nearestPoints, elevationFieldName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"计算内插高程时出错：{ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 搜索最近的高程点
+        /// </summary>
+        private List<Tuple<IFeature, double>> FindNearestElevationPoints(
+            IPoint targetPoint, IFeatureClass elevationClass, string elevationFieldName, int neighborCount)
+        {
+            List<Tuple<IFeature, double>> nearestPoints = new List<Tuple<IFeature, double>>();
+            IFeatureCursor featureCursor = null;
+
+            try
+            {
+                // 搜索所有高程点
+                featureCursor = elevationClass.Search(null, true);
+                IFeature feature = featureCursor.NextFeature();
+
+                // 计算所有点到目标点的距离
+                var allDistances = new List<Tuple<IFeature, double>>();
+
+                while (feature != null)
+                {
+                    if (feature.Shape is IPoint elevationPoint)
+                    {
+                        double distance = CalculateDistance(targetPoint, elevationPoint);
+                        double elevation = GetFeatureElevation(feature, elevationFieldName);
+
+                        if (!double.IsNaN(elevation) && distance > 0) // 排除零距离点
+                        {
+                            allDistances.Add(new Tuple<IFeature, double>(feature, distance));
+                        }
+                    }
+                    feature = featureCursor.NextFeature();
+                }
+
+                // 按距离排序并取前N个
+                nearestPoints = allDistances
+                    .OrderBy(d => d.Item2)
+                    .Take(neighborCount)
+                    .ToList();
+            }
+            finally
+            {
+                if (featureCursor != null)
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+            }
+
+            return nearestPoints;
+        }
+
+        /// <summary>
+        /// 使用反距离权重法计算高程
+        /// </summary>
+        private double CalculateIDWElevation(IPoint targetPoint, List<Tuple<IFeature, double>> nearestPoints, string elevationFieldName)
+        {
+            double sumWeightedElevation = 0;
+            double sumWeights = 0;
+            double power = 2; // 反距离的幂，通常为2
+
+            foreach (var pointData in nearestPoints)
+            {
+                IFeature feature = pointData.Item1;
+                double distance = pointData.Item2;
+                double elevation = GetFeatureElevation(feature, elevationFieldName);
+
+                if (double.IsNaN(elevation)) continue;
+
+                // 计算权重：1 / distance^power
+                double weight = 1.0 / Math.Pow(distance, power);
+
+                sumWeightedElevation += elevation * weight;
+                sumWeights += weight;
+            }
+
+            // 避免除零
+            if (sumWeights == 0) return double.NaN;
+
+            return sumWeightedElevation / sumWeights;
+        }
+        /// <summary>
+        /// 获取高程点图层
+        /// </summary>
+        private ILayer GetElevationLayer()
+        {
+            // 方法1：自动识别高程点图层
+            ILayer layer = FindElevationLayerByNames();
+            if (layer != null) return layer;
+
+            // 方法2：使用当前选中图层
+            return GetSelectedLayer();
+        }
+
+        /// <summary>
+        /// 自动识别高程点图层
+        /// </summary>
+        private ILayer FindElevationLayerByNames()
+        {
+            if (axMapControl1 == null || axMapControl1.Map == null) return null;
+
+            string[] elevationLayerNames = {
+        "高程", "高程点", "Elevation", "DEM", "点", "Points",
+        "高程点层", "地形点", "地形", "Terrain"
+    };
+
+            for (int i = 0; i < axMapControl1.Map.LayerCount; i++)
+            {
+                ILayer layer = axMapControl1.Map.get_Layer(i);
+                IFeatureLayer featureLayer = layer as IFeatureLayer;
+
+                if (featureLayer != null && featureLayer.FeatureClass != null)
+                {
+                    // 检查是否为点图层
+                    if (featureLayer.FeatureClass.ShapeType == esriGeometryType.esriGeometryPoint)
+                    {
+                        // 检查图层名称
+                        string layerName = layer.Name;
+                        foreach (string elevationName in elevationLayerNames)
+                        {
+                            if (layerName.IndexOf(elevationName, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return layer;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 显示高程查询结果
+        /// </summary>
+        private void DisplayElevationResult(IPoint clickPoint, double elevation)
+        {
+            try
+            {
+                // 创建结果显示文本
+                string resultText = $"位置坐标:\nX: {clickPoint.X:F2}\nY: {clickPoint.Y:F2}\n内插高程: {elevation:F2} 米";
+
+                // 显示消息框
+                MessageBox.Show(resultText, "高程查询结果");
+
+                // 在点击位置添加标记
+                AddElevationMarker(clickPoint, elevation);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"显示结果时出错：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 在点击位置添加高程标记
+        /// </summary>
+        private void AddElevationMarker(IPoint point, double elevation)
+        {
+            try
+            {
+                IGraphicsContainer graphicsContainer = axMapControl1.Map as IGraphicsContainer;
+                if (graphicsContainer == null) return;
+
+                // 创建标记点元素
+                IMarkerElement markerElement = new MarkerElementClass();
+
+                // 设置符号
+                ISimpleMarkerSymbol markerSymbol = new SimpleMarkerSymbolClass();
+                markerSymbol.Color = GetRGBColor(255, 0, 0); // 红色
+                markerSymbol.Size = 8;
+                markerSymbol.Style = esriSimpleMarkerStyle.esriSMSCircle;
+
+                markerElement.Symbol = markerSymbol;
+
+                // 设置几何
+                IElement element = markerElement as IElement;
+                element.Geometry = point;
+
+                // 添加到图形容器
+                graphicsContainer.AddElement(element, 0);
+
+                // 添加文本标注
+                AddElevationText(point, elevation, graphicsContainer);
+
+                // 刷新显示
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"添加高程标记时出错：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 添加高程文本标注
+        /// </summary>
+        private void AddElevationText(IPoint point, double elevation, IGraphicsContainer graphicsContainer)
+        {
+            try
+            {
+                ITextElement textElement = new TextElementClass();
+
+                // 设置文本符号
+                ITextSymbol textSymbol = new TextSymbolClass();
+                textSymbol.Color = GetRGBColor(0, 0, 255); // 蓝色
+                textSymbol.Size = 10;
+
+                textElement.Symbol = textSymbol;
+                textElement.Text = $"{elevation:F1}m";
+
+                // 设置文本位置（稍微偏移）
+                IPoint textPoint = new PointClass();
+                textPoint.X = point.X + 20; // 向右偏移20个单位
+                textPoint.Y = point.Y;
+
+                IElement element = textElement as IElement;
+                element.Geometry = textPoint;
+
+                graphicsContainer.AddElement(element, 0);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"添加高程文本时出错：{ex.Message}");
             }
         }
     }

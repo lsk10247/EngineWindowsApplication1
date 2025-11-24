@@ -70,12 +70,16 @@ namespace EngineWindowsApplication1
             this.menuFeatureDeleteByLocation = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureDeleteByRectangle = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureDeleteByPolygon = new System.Windows.Forms.ToolStripMenuItem();
+            this.filterWrongHeightPoint = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureBrowse = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFeatureIdentify = new System.Windows.Forms.ToolStripMenuItem();
             this.要素查询ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.面要素ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.查询最大ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.查询最小ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.queryMax = new System.Windows.Forms.ToolStripMenuItem();
+            this.queryMin = new System.Windows.Forms.ToolStripMenuItem();
+            this.startPolylineBufferQuery = new System.Windows.Forms.ToolStripMenuItem();
+            this.点要素ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.startGetElevation = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -280,6 +284,7 @@ namespace EngineWindowsApplication1
             this.axMapControl1.TabIndex = 0;
             this.axMapControl1.OnMouseDown += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnMouseDownEventHandler(this.axMapControl1_OnMouseDown);
             this.axMapControl1.OnMouseMove += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnMouseMoveEventHandler(this.axMapControl1_OnMouseMove);
+            this.axMapControl1.OnDoubleClick += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnDoubleClickEventHandler(this.axMapControl1_OnDoubleClick);
             this.axMapControl1.OnExtentUpdated += new ESRI.ArcGIS.Controls.IMapControlEvents2_Ax_OnExtentUpdatedEventHandler(this.axMapControl1_OnExtentUpdated);
             // 
             // toolStrip1
@@ -474,7 +479,8 @@ namespace EngineWindowsApplication1
             this.menuFeatureDelete.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFeatureDeleteByLocation,
             this.menuFeatureDeleteByRectangle,
-            this.menuFeatureDeleteByPolygon});
+            this.menuFeatureDeleteByPolygon,
+            this.filterWrongHeightPoint});
             this.menuFeatureDelete.Name = "menuFeatureDelete";
             this.menuFeatureDelete.Size = new System.Drawing.Size(100, 22);
             this.menuFeatureDelete.Text = "删除";
@@ -482,23 +488,30 @@ namespace EngineWindowsApplication1
             // menuFeatureDeleteByLocation
             // 
             this.menuFeatureDeleteByLocation.Name = "menuFeatureDeleteByLocation";
-            this.menuFeatureDeleteByLocation.Size = new System.Drawing.Size(136, 22);
+            this.menuFeatureDeleteByLocation.Size = new System.Drawing.Size(160, 22);
             this.menuFeatureDeleteByLocation.Text = "点选删除";
             this.menuFeatureDeleteByLocation.Click += new System.EventHandler(this.menuFeatureDeleteByLocation_Click);
             // 
             // menuFeatureDeleteByRectangle
             // 
             this.menuFeatureDeleteByRectangle.Name = "menuFeatureDeleteByRectangle";
-            this.menuFeatureDeleteByRectangle.Size = new System.Drawing.Size(136, 22);
+            this.menuFeatureDeleteByRectangle.Size = new System.Drawing.Size(160, 22);
             this.menuFeatureDeleteByRectangle.Text = "框选删除";
             this.menuFeatureDeleteByRectangle.Click += new System.EventHandler(this.menuFeatureDeleteByRectangle_Click);
             // 
             // menuFeatureDeleteByPolygon
             // 
             this.menuFeatureDeleteByPolygon.Name = "menuFeatureDeleteByPolygon";
-            this.menuFeatureDeleteByPolygon.Size = new System.Drawing.Size(136, 22);
+            this.menuFeatureDeleteByPolygon.Size = new System.Drawing.Size(160, 22);
             this.menuFeatureDeleteByPolygon.Text = "多边形删除";
             this.menuFeatureDeleteByPolygon.Click += new System.EventHandler(this.menuFeatureDeleteByPolygon_Click);
+            // 
+            // filterWrongHeightPoint
+            // 
+            this.filterWrongHeightPoint.Name = "filterWrongHeightPoint";
+            this.filterWrongHeightPoint.Size = new System.Drawing.Size(160, 22);
+            this.filterWrongHeightPoint.Text = "过滤高程异常点";
+            this.filterWrongHeightPoint.Click += new System.EventHandler(this.filterWrongHeightPoint_Click);
             // 
             // menuFeatureBrowse
             // 
@@ -517,7 +530,8 @@ namespace EngineWindowsApplication1
             // 要素查询ToolStripMenuItem
             // 
             this.要素查询ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.面要素ToolStripMenuItem});
+            this.面要素ToolStripMenuItem,
+            this.点要素ToolStripMenuItem});
             this.要素查询ToolStripMenuItem.Name = "要素查询ToolStripMenuItem";
             this.要素查询ToolStripMenuItem.Size = new System.Drawing.Size(68, 21);
             this.要素查询ToolStripMenuItem.Text = "要素查询";
@@ -525,23 +539,48 @@ namespace EngineWindowsApplication1
             // 面要素ToolStripMenuItem
             // 
             this.面要素ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.查询最大ToolStripMenuItem,
-            this.查询最小ToolStripMenuItem});
+            this.queryMax,
+            this.queryMin,
+            this.startPolylineBufferQuery});
             this.面要素ToolStripMenuItem.Name = "面要素ToolStripMenuItem";
             this.面要素ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.面要素ToolStripMenuItem.Text = "面要素";
             // 
-            // 查询最大ToolStripMenuItem
+            // queryMax
             // 
-            this.查询最大ToolStripMenuItem.Name = "查询最大ToolStripMenuItem";
-            this.查询最大ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.查询最大ToolStripMenuItem.Text = "查询最大";
+            this.queryMax.Name = "queryMax";
+            this.queryMax.Size = new System.Drawing.Size(136, 22);
+            this.queryMax.Text = "查询最大";
+            this.queryMax.Click += new System.EventHandler(this.queryMax_Click);
             // 
-            // 查询最小ToolStripMenuItem
+            // queryMin
             // 
-            this.查询最小ToolStripMenuItem.Name = "查询最小ToolStripMenuItem";
-            this.查询最小ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.查询最小ToolStripMenuItem.Text = "查询最小";
+            this.queryMin.Name = "queryMin";
+            this.queryMin.Size = new System.Drawing.Size(136, 22);
+            this.queryMin.Text = "查询最小";
+            this.queryMin.Click += new System.EventHandler(this.queryMin_Click);
+            // 
+            // startPolylineBufferQuery
+            // 
+            this.startPolylineBufferQuery.Name = "startPolylineBufferQuery";
+            this.startPolylineBufferQuery.Size = new System.Drawing.Size(136, 22);
+            this.startPolylineBufferQuery.Text = "多义线查询";
+            this.startPolylineBufferQuery.Click += new System.EventHandler(this.startPolylineBufferQuery_Click);
+            // 
+            // 点要素ToolStripMenuItem
+            // 
+            this.点要素ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.startGetElevation});
+            this.点要素ToolStripMenuItem.Name = "点要素ToolStripMenuItem";
+            this.点要素ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.点要素ToolStripMenuItem.Text = "点要素";
+            // 
+            // startGetElevation
+            // 
+            this.startGetElevation.Name = "startGetElevation";
+            this.startGetElevation.Size = new System.Drawing.Size(180, 22);
+            this.startGetElevation.Text = "获取高程";
+            this.startGetElevation.Click += new System.EventHandler(this.startGetElevation_Click);
             // 
             // Form1
             // 
@@ -637,8 +676,12 @@ namespace EngineWindowsApplication1
         private System.Windows.Forms.ToolStripMenuItem menuFeatureDeleteByRectangle;
         private System.Windows.Forms.ToolStripMenuItem 要素查询ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 面要素ToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 查询最大ToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 查询最小ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem queryMax;
+        private System.Windows.Forms.ToolStripMenuItem queryMin;
+        private System.Windows.Forms.ToolStripMenuItem filterWrongHeightPoint;
+        private System.Windows.Forms.ToolStripMenuItem startPolylineBufferQuery;
+        private System.Windows.Forms.ToolStripMenuItem 点要素ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem startGetElevation;
     }
 }
 
