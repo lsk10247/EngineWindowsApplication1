@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace EngineWindowsApplication1
@@ -151,6 +152,14 @@ namespace EngineWindowsApplication1
             /// 获取点击位置高程
             /// </summary>
             GetClickPointElevation,
+            /// <summary>
+            /// 面要素点击查询
+            /// </summary>
+            PolygonClickQuery,            
+            /// <summary>
+            /// 面要素点击查询
+            /// </summary>
+            PolylineClickQuery,
         }
 
         private void menuFileOpen_Click(object sender, EventArgs e)
@@ -1526,11 +1535,316 @@ namespace EngineWindowsApplication1
                 case MapOperatorType.GetClickPointElevation:
                     HandleGetElevationMouseDown(e);
                     break;
+                case MapOperatorType.PolygonClickQuery:
+                    IdentifyPolygonAtLocation(e.x, e.y);
+                    break;                
+                case MapOperatorType.PolylineClickQuery:
+                    IdentifyPolygonAtLocation(e.x, e.y);
+                    break;
                 default:
                     break;
 
             }
 
+        }
+        /// <summary>
+        /// 在指定位置查询面要素
+        /// </summary>
+        /// <param name="x">鼠标X坐标</param>
+        /// <param name="y">鼠标Y坐标</param>
+        private void IdentifyPolygonAtLocation(int x, int y)
+        {
+            try
+            {
+                // 1. 获取当前选中图层
+                var layer = GetSelectedLayer();
+                if (layer == null)
+                {
+                    MessageBox.Show("请先选择一个面图层", "提示");
+                    return;
+                }
+
+                // 2. 检查是否为面图层
+                if (!(layer is IFeatureLayer featureLayer))
+                {
+                    return;
+                }
+
+                // 3. 将屏幕坐标转换为地图坐标点
+                var screenPoint = new tagPOINT { x = x, y = y };
+                IPoint clickPoint = axMapControl1.ToMapPoint(screenPoint.x, screenPoint.y);
+
+                // 4. 执行面要素查询
+                IFeature hitFeature = FindFeatureAtPoint(featureLayer, clickPoint);
+
+                // 5. 打印查询结果
+                PrintPolygonInfo(hitFeature, featureLayer);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"查询面要素时发生错误: {ex.Message}", "错误");
+            }
+        }
+        private IFeature FindFeatureAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 0.01)
+        {
+            if (featureLayer == null || point == null)
+                return null;
+
+            try
+            {
+                // 获取要素类几何类型
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                esriGeometryType geometryType = featureClass.ShapeType;
+
+                // 根据几何类型选择查询策略
+                switch (geometryType)
+                {
+                    case esriGeometryType.esriGeometryPolygon:
+                        return FindPolygonAtPoint(featureLayer, point);
+
+                    case esriGeometryType.esriGeometryPolyline:
+                        return FindLineAtPoint(featureLayer, point, tolerance);
+
+                    //case esriGeometryType.esriGeometryPoint:
+                    //    return FindPointAtPoint(featureLayer, point, tolerance);
+
+                    default:
+                        System.Diagnostics.Debug.WriteLine($"不支持的几何类型: {geometryType}");
+                        return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"查询要素时出错: {ex.Message}");
+                return null;
+            }
+        }
+        private IFeature FindLineAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 0.01)
+        {
+            // 检查输入参数
+            if (featureLayer == null || point == null)
+                return null;
+
+            try
+            {
+
+                // 创建缓冲区来搜索附近的线
+                ITopologicalOperator topoOp = point as ITopologicalOperator;
+                if (topoOp == null) return null;
+
+                IPolygon searchGeometry = topoOp.Buffer(tolerance) as IPolygon;
+
+                // 创建空间过滤器
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = searchGeometry;
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+                spatialFilter.WhereClause = "";
+
+                IFeatureCursor featureCursor = null;
+                IFeature closestFeature = null;
+                double minDistance = double.MaxValue;
+
+                try
+                {
+                    featureCursor = featureLayer.Search(spatialFilter, false);
+                    IFeature feature = featureCursor.NextFeature();
+
+                    while (feature != null)
+                    {
+                        // 计算点到线的实际距离
+                        IProximityOperator proxOp = feature.Shape as IProximityOperator;
+                        if (proxOp != null)
+                        {
+                            double distance = proxOp.ReturnDistance(point);
+                            if (distance < minDistance && distance <= tolerance)
+                            {
+                                minDistance = distance;
+                                closestFeature = feature;
+                            }
+                        }
+                        feature = featureCursor.NextFeature();
+                    }
+
+                    return closestFeature;
+                }
+                finally
+                {
+                    if (featureCursor != null)
+                        System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"查询线要素时出错: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// 在指定点查找面要素
+        /// </summary>
+        /// <param name="featureLayer">面图层</param>
+        /// <param name="point">查询点</param>
+        /// <returns>命中的面要素，未找到返回null</returns>
+        private IFeature FindPolygonAtPoint(IFeatureLayer featureLayer, IPoint point)
+        {
+            // 检查输入参数
+            if (featureLayer == null || point == null)
+                return null;
+
+            try
+            {
+
+                // 创建空间过滤器
+                ISpatialFilter spatialFilter = new SpatialFilterClass();
+                spatialFilter.Geometry = point;
+
+                // 修正空间关系：点被面包含
+                spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelWithin;
+
+                // 或者使用相交关系，更宽松
+                // spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
+
+                spatialFilter.WhereClause = "";
+
+                // 设置搜索容差（重要！）
+                ISpatialFilter spatialFilter2 = spatialFilter as ISpatialFilter;
+                if (spatialFilter2 != null)
+                {
+                    spatialFilter2.SearchOrder = esriSearchOrder.esriSearchOrderSpatial;
+                }
+
+                IFeatureCursor featureCursor = null;
+                try
+                {
+                    featureCursor = featureLayer.Search(spatialFilter, false);
+                    IFeature feature = featureCursor.NextFeature();
+
+                    if (feature != null)
+                    {
+                        // 直接返回找到的要素，不需要重新获取
+                        return feature;
+                    }
+                }
+                finally
+                {
+                    if (featureCursor != null)
+                        System.Runtime.InteropServices.Marshal.ReleaseComObject(featureCursor);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 记录异常信息
+                System.Diagnostics.Debug.WriteLine($"查询要素时出错: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 打印面要素信息
+        /// </summary>
+        /// <param name="feature">面要素</param>
+        /// <param name="featureLayer">要素图层</param>
+        private void PrintPolygonInfo(IFeature feature, IFeatureLayer featureLayer)
+        {
+            if (feature == null)
+            {
+                Console.WriteLine("未找到要素");
+                MessageBox.Show("未找到要素", "查询结果");
+                return;
+            }
+
+            // 获取要素基本信息
+            int featureID = feature.OID;
+            string featureName = GetPolygonName(feature);
+
+            // 获取几何信息
+            string geometryInfo = GetPolygonGeometryInfo(feature);
+
+            // 构建输出信息
+            StringBuilder info = new System.Text.StringBuilder();
+            info.AppendLine($"=== 面要素查询结果 ===");
+            info.AppendLine($"图层名称: {featureLayer.Name}");
+            info.AppendLine($"要素ID: {featureID}");
+            info.AppendLine($"要素名称: {featureName}");
+            info.AppendLine($"几何信息: {geometryInfo}");
+            info.AppendLine($"------------------------");
+
+            // 打印到控制台
+            Console.WriteLine(info.ToString());
+
+            // 显示消息框
+            MessageBox.Show(info.ToString(), "面要素查询结果");
+        }
+
+        /// <summary>
+        /// 获取面要素的名称
+        /// </summary>
+        /// <param name="feature">面要素</param>
+        /// <returns>要素名称</returns>
+        private string GetPolygonName(IFeature feature)
+        {
+            // 面要素常见的名称字段
+            string[] polygonNameFields = {
+        "NAME", "名称", "MC", "地名", "BUILDING_NAME", "AREA_NAME",
+        "POLYGON_NAME", "FEATURE_NAME", "LABEL", "DESCRIPTION"
+    };
+
+            IFields fields = feature.Fields;
+            for (int i = 0; i < fields.FieldCount; i++)
+            {
+                IField field = fields.Field[i];
+                string fieldName = field.Name.ToUpper();
+
+                if (polygonNameFields.Contains(fieldName))
+                {
+                    object value = feature.get_Value(i);
+                    if (value != null && !Convert.IsDBNull(value))
+                    {
+                        return value.ToString();
+                    }
+                }
+            }
+
+            return "未命名";
+        }
+
+        /// <summary>
+        /// 获取面要素的几何信息
+        /// </summary>
+        /// <param name="feature">面要素</param>
+        /// <returns>几何信息字符串</returns>
+        private string GetPolygonGeometryInfo(IFeature feature)
+        {
+            if (feature.Shape == null || feature.Shape.IsEmpty)
+                return "无几何信息";
+
+            try
+            {
+                IPolygon polygon = feature.Shape as IPolygon;
+                if (polygon == null)
+                    return "几何类型错误";
+
+                IArea area = polygon as IArea;
+                ICurve curve = polygon as ICurve;
+
+                // 计算面积和周长
+                double polygonArea = area.Area;
+                double polygonLength = curve.Length;
+
+                // 获取外包矩形
+                IEnvelope envelope = polygon.Envelope;
+                double width = envelope.Width;
+                double height = envelope.Height;
+
+                return $"面积: {polygonArea:F2} 平方单位, 周长: {polygonLength:F2} 单位, 范围: {width:F2} × {height:F2}";
+            }
+            catch (Exception ex)
+            {
+                return $"几何信息获取失败: {ex.Message}";
+            }
         }
         private void AddPolylineToLayer(ILayer layer, IPolyline polyline)
         {
@@ -1895,7 +2209,8 @@ namespace EngineWindowsApplication1
                 if (area > maxArea)
                 {
                     maxArea = area;
-                    maxFeature = feature;
+                    // 复制要素而不是直接引用
+                    maxFeature = featureClass.GetFeature(feature.OID);
                 }
                 feature = featureCursor.NextFeature();
             }
@@ -2178,10 +2493,23 @@ namespace EngineWindowsApplication1
                 int fieldIndex = feature.Fields.FindField(elevationFieldName);
                 if (fieldIndex == -1) return double.NaN;
 
-                object value = feature.get_Value(fieldIndex);
-                if (value == null || value == DBNull.Value) return double.NaN;
+                IFeatureClass featureClass = (IFeatureClass)feature.Class;
+                IQueryFilter queryFilter = new QueryFilterClass();
+                queryFilter.WhereClause = $"{featureClass.OIDFieldName} = {feature.OID}";
 
-                return Convert.ToDouble(value);
+
+                IFeatureCursor featureCursor = featureClass.Search(queryFilter, false);
+
+                IFeature resultFeature = featureCursor.NextFeature();
+                if (resultFeature != null)
+                {
+                    object value = resultFeature.get_Value(fieldIndex);
+                    if (value == null || value == DBNull.Value) return double.NaN;
+                    return Convert.ToDouble(value);
+                }
+                
+
+                return double.NaN;
             }
             catch
             {
@@ -2632,6 +2960,7 @@ namespace EngineWindowsApplication1
             {
                 // 设置当前操作类型
                 m_currentOperator = MapOperatorType.GetClickPointElevation;
+                mapOperatorType = MapOperatorType.GetClickPointElevation;
 
                 // 设置鼠标样式
                 axMapControl1.MousePointer = esriControlsMousePointer.esriPointerCrosshair;
@@ -2654,7 +2983,7 @@ namespace EngineWindowsApplication1
                 IPoint clickPoint = axMapControl1.ActiveView.ScreenDisplay.DisplayTransformation.ToMapPoint(e.x, e.y);
 
                 // 获取高程图层
-                ILayer elevationLayer = GetElevationLayer();
+                ILayer elevationLayer = GetSelectedLayer();
                 if (elevationLayer == null)
                 {
                     MessageBox.Show("未找到高程点图层！");
@@ -2943,6 +3272,16 @@ namespace EngineWindowsApplication1
             {
                 System.Diagnostics.Debug.WriteLine($"添加高程文本时出错：{ex.Message}");
             }
+        }
+
+        private void startPolygonClickQuery_Click(object sender, EventArgs e)
+        {
+            mapOperatorType = MapOperatorType.PolygonClickQuery;
+        }
+
+        private void startPolylineClickQuery_Click(object sender, EventArgs e)
+        {
+            mapOperatorType = MapOperatorType.PolylineClickQuery;
         }
     }
 }
