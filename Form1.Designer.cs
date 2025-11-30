@@ -78,12 +78,12 @@ namespace EngineWindowsApplication1
             this.queryMax = new System.Windows.Forms.ToolStripMenuItem();
             this.queryMin = new System.Windows.Forms.ToolStripMenuItem();
             this.startPolylineBufferQuery = new System.Windows.Forms.ToolStripMenuItem();
+            this.startPolygonClickQuery = new System.Windows.Forms.ToolStripMenuItem();
             this.点要素ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startGetElevation = new System.Windows.Forms.ToolStripMenuItem();
-            this.startPolygonClickQuery = new System.Windows.Forms.ToolStripMenuItem();
+            this.点击查询ToolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.线要素ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startPolylineClickQuery = new System.Windows.Forms.ToolStripMenuItem();
-            this.点击查询ToolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -555,23 +555,30 @@ namespace EngineWindowsApplication1
             // queryMax
             // 
             this.queryMax.Name = "queryMax";
-            this.queryMax.Size = new System.Drawing.Size(180, 22);
+            this.queryMax.Size = new System.Drawing.Size(136, 22);
             this.queryMax.Text = "查询最大";
             this.queryMax.Click += new System.EventHandler(this.queryMax_Click);
             // 
             // queryMin
             // 
             this.queryMin.Name = "queryMin";
-            this.queryMin.Size = new System.Drawing.Size(180, 22);
+            this.queryMin.Size = new System.Drawing.Size(136, 22);
             this.queryMin.Text = "查询最小";
             this.queryMin.Click += new System.EventHandler(this.queryMin_Click);
             // 
             // startPolylineBufferQuery
             // 
             this.startPolylineBufferQuery.Name = "startPolylineBufferQuery";
-            this.startPolylineBufferQuery.Size = new System.Drawing.Size(180, 22);
+            this.startPolylineBufferQuery.Size = new System.Drawing.Size(136, 22);
             this.startPolylineBufferQuery.Text = "多义线查询";
             this.startPolylineBufferQuery.Click += new System.EventHandler(this.startPolylineBufferQuery_Click);
+            // 
+            // startPolygonClickQuery
+            // 
+            this.startPolygonClickQuery.Name = "startPolygonClickQuery";
+            this.startPolygonClickQuery.Size = new System.Drawing.Size(136, 22);
+            this.startPolygonClickQuery.Text = "点击查询";
+            this.startPolygonClickQuery.Click += new System.EventHandler(this.startPolygonClickQuery_Click);
             // 
             // 点要素ToolStripMenuItem
             // 
@@ -585,16 +592,15 @@ namespace EngineWindowsApplication1
             // startGetElevation
             // 
             this.startGetElevation.Name = "startGetElevation";
-            this.startGetElevation.Size = new System.Drawing.Size(180, 22);
+            this.startGetElevation.Size = new System.Drawing.Size(124, 22);
             this.startGetElevation.Text = "获取高程";
             this.startGetElevation.Click += new System.EventHandler(this.startGetElevation_Click);
             // 
-            // startPolygonClickQuery
+            // 点击查询ToolStripMenuItem2
             // 
-            this.startPolygonClickQuery.Name = "startPolygonClickQuery";
-            this.startPolygonClickQuery.Size = new System.Drawing.Size(180, 22);
-            this.startPolygonClickQuery.Text = "点击查询";
-            this.startPolygonClickQuery.Click += new System.EventHandler(this.startPolygonClickQuery_Click);
+            this.点击查询ToolStripMenuItem2.Name = "点击查询ToolStripMenuItem2";
+            this.点击查询ToolStripMenuItem2.Size = new System.Drawing.Size(124, 22);
+            this.点击查询ToolStripMenuItem2.Text = "点击查询";
             // 
             // 线要素ToolStripMenuItem
             // 
@@ -610,12 +616,6 @@ namespace EngineWindowsApplication1
             this.startPolylineClickQuery.Size = new System.Drawing.Size(180, 22);
             this.startPolylineClickQuery.Text = "点击查询";
             this.startPolylineClickQuery.Click += new System.EventHandler(this.startPolylineClickQuery_Click);
-            // 
-            // 点击查询ToolStripMenuItem2
-            // 
-            this.点击查询ToolStripMenuItem2.Name = "点击查询ToolStripMenuItem2";
-            this.点击查询ToolStripMenuItem2.Size = new System.Drawing.Size(180, 22);
-            this.点击查询ToolStripMenuItem2.Text = "点击查询";
             // 
             // Form1
             // 

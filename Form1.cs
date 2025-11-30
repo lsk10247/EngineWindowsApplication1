@@ -1560,7 +1560,7 @@ namespace EngineWindowsApplication1
                 var layer = GetSelectedLayer();
                 if (layer == null)
                 {
-                    MessageBox.Show("请先选择一个面图层", "提示");
+                    MessageBox.Show("请先选择一个图层", "提示");
                     return;
                 }
 
@@ -1574,7 +1574,7 @@ namespace EngineWindowsApplication1
                 var screenPoint = new tagPOINT { x = x, y = y };
                 IPoint clickPoint = axMapControl1.ToMapPoint(screenPoint.x, screenPoint.y);
 
-                // 4. 执行面要素查询
+                // 4. 执行要素查询
                 IFeature hitFeature = FindFeatureAtPoint(featureLayer, clickPoint);
 
                 // 5. 打印查询结果
@@ -1586,7 +1586,7 @@ namespace EngineWindowsApplication1
                 MessageBox.Show($"查询面要素时发生错误: {ex.Message}", "错误");
             }
         }
-        private IFeature FindFeatureAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 0.01)
+        private IFeature FindFeatureAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 10)
         {
             if (featureLayer == null || point == null)
                 return null;
@@ -1620,17 +1620,30 @@ namespace EngineWindowsApplication1
                 return null;
             }
         }
-        private IFeature FindLineAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 0.01)
+        private IFeature FindLineAtPoint(IFeatureLayer featureLayer, IPoint point, double tolerance = 10)
         {
-            // 检查输入参数
             if (featureLayer == null || point == null)
                 return null;
 
+            IFeatureCursor featureCursor = null;
+            IFeature closestFeature = null;
+
             try
             {
+                IFeatureClass featureClass = featureLayer.FeatureClass;
+                IGeoDataset featureGeoDataset = (IGeoDataset)featureClass;
+                ISpatialReference featureSpatialRef = featureGeoDataset.SpatialReference;
 
-                // 创建缓冲区来搜索附近的线
-                ITopologicalOperator topoOp = point as ITopologicalOperator;
+                // 修复1：使用更安全的空间参考检查方法
+                IPoint searchPoint = EnsureSpatialReference(point, featureSpatialRef);
+                if (searchPoint == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("无法统一空间参考系统");
+                    return null;
+                }
+
+                // 创建缓冲区
+                ITopologicalOperator topoOp = searchPoint as ITopologicalOperator;
                 if (topoOp == null) return null;
 
                 IPolygon searchGeometry = topoOp.Buffer(tolerance) as IPolygon;
@@ -1641,8 +1654,9 @@ namespace EngineWindowsApplication1
                 spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
                 spatialFilter.WhereClause = "";
 
-                IFeatureCursor featureCursor = null;
-                IFeature closestFeature = null;
+                // 修复2：移除有问题的设置（如果会导致错误）
+                // spatialFilter.OutputSpatialReference = featureSpatialRef;
+
                 double minDistance = double.MaxValue;
 
                 try
@@ -1652,17 +1666,27 @@ namespace EngineWindowsApplication1
 
                     while (feature != null)
                     {
-                        // 计算点到线的实际距离
-                        IProximityOperator proxOp = feature.Shape as IProximityOperator;
-                        if (proxOp != null)
+                        try
                         {
-                            double distance = proxOp.ReturnDistance(point);
-                            if (distance < minDistance && distance <= tolerance)
+                            if (IsValidLineGeometry(feature.Shape))
                             {
-                                minDistance = distance;
-                                closestFeature = feature;
+                                IProximityOperator proxOp = feature.Shape as IProximityOperator;
+                                if (proxOp != null)
+                                {
+                                    double distance = proxOp.ReturnDistance(searchPoint);
+                                    if (distance < minDistance && distance <= tolerance)
+                                    {
+                                        minDistance = distance;
+                                        closestFeature = feature;
+                                    }
+                                }
                             }
                         }
+                        catch (Exception featureEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"处理要素 {feature.OID} 时出错: {featureEx.Message}");
+                        }
+
                         feature = featureCursor.NextFeature();
                     }
 
@@ -1680,7 +1704,117 @@ namespace EngineWindowsApplication1
                 return null;
             }
         }
-        
+        /// <summary>
+        /// 验证线几何是否有效
+        /// </summary>
+        private bool IsValidLineGeometry(IGeometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty)
+                    return false;
+
+                // 检查是否是线要素
+                IPolyline line = geometry as IPolyline;
+                if (line == null)
+                    return false;
+
+                // 检查线是否至少有两个点
+                IPointCollection pointCollection = line as IPointCollection;
+                if (pointCollection == null || pointCollection.PointCount < 2)
+                    return false;
+
+                // 检查线的长度是否大于0
+                ICurve curve = line as ICurve;
+                if (curve != null && curve.Length <= 0)
+                    return false;
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 安全的空间参考处理方法
+        /// </summary>
+        private IPoint EnsureSpatialReference(IPoint point, ISpatialReference targetSpatialRef)
+        {
+            try
+            {
+                if (point == null || targetSpatialRef == null)
+                    return null;
+
+                // 检查点的空间参考是否存在
+                if (point.SpatialReference == null)
+                {
+                    // 如果点的空间参考为空，直接分配目标空间参考
+                    point.SpatialReference = targetSpatialRef;
+                    return point;
+                }
+
+                // 修复3：使用更安全的空间参考比较方法
+                if (!IsSpatialReferenceEqual(point.SpatialReference, targetSpatialRef))
+                {
+                    try
+                    {
+                        // 尝试投影转换
+                        point.Project(targetSpatialRef);
+                        System.Diagnostics.Debug.WriteLine("点的空间参考已投影转换");
+                    }
+                    catch (Exception projEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"投影转换失败: {projEx.Message}");
+                        // 创建新点并复制坐标
+                        IPoint newPoint = new PointClass();
+                        newPoint.X = point.X;
+                        newPoint.Y = point.Y;
+                        newPoint.SpatialReference = targetSpatialRef;
+                        return newPoint;
+                    }
+                }
+
+                return point;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"统一空间参考时出错: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 安全的空间参考比较方法
+        /// </summary>
+        private bool IsSpatialReferenceEqual(ISpatialReference sr1, ISpatialReference sr2)
+        {
+                // 方法2：比较工厂代码作为备选
+            try
+            {
+                IProjectedCoordinateSystem pcs1 = sr1 as IProjectedCoordinateSystem;
+                IProjectedCoordinateSystem pcs2 = sr2 as IProjectedCoordinateSystem;
+                if (pcs1 != null && pcs2 != null)
+                {
+                    return pcs1.FactoryCode == pcs2.FactoryCode;
+                }
+
+                IGeographicCoordinateSystem gcs1 = sr1 as IGeographicCoordinateSystem;
+                IGeographicCoordinateSystem gcs2 = sr2 as IGeographicCoordinateSystem;
+                if (gcs1 != null && gcs2 != null)
+                {
+                    return gcs1.FactoryCode == gcs2.FactoryCode;
+                }
+            }
+            catch
+            {
+                // 忽略比较异常
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 在指定点查找面要素
         /// </summary>
@@ -1761,11 +1895,11 @@ namespace EngineWindowsApplication1
             string featureName = GetPolygonName(feature);
 
             // 获取几何信息
-            string geometryInfo = GetPolygonGeometryInfo(feature);
+            string geometryInfo = GetGeometryInfo(feature);
 
             // 构建输出信息
             StringBuilder info = new System.Text.StringBuilder();
-            info.AppendLine($"=== 面要素查询结果 ===");
+            info.AppendLine($"=== 要素查询结果 ===");
             info.AppendLine($"图层名称: {featureLayer.Name}");
             info.AppendLine($"要素ID: {featureID}");
             info.AppendLine($"要素名称: {featureName}");
@@ -1776,7 +1910,7 @@ namespace EngineWindowsApplication1
             Console.WriteLine(info.ToString());
 
             // 显示消息框
-            MessageBox.Show(info.ToString(), "面要素查询结果");
+            MessageBox.Show(info.ToString(), "要素查询结果");
         }
 
         /// <summary>
@@ -1811,35 +1945,223 @@ namespace EngineWindowsApplication1
             return "未命名";
         }
 
-        /// <summary>
-        /// 获取面要素的几何信息
-        /// </summary>
-        /// <param name="feature">面要素</param>
-        /// <returns>几何信息字符串</returns>
-        private string GetPolygonGeometryInfo(IFeature feature)
+        private string GetGeometryInfo(IFeature feature)
         {
-            if (feature.Shape == null || feature.Shape.IsEmpty)
+            if (feature?.Shape == null || feature.Shape.IsEmpty)
                 return "无几何信息";
 
             try
             {
-                IPolygon polygon = feature.Shape as IPolygon;
-                if (polygon == null)
-                    return "几何类型错误";
+                IGeometry geometry = feature.Shape;
+                string geometryType = GetGeometryType(geometry);
 
-                IArea area = polygon as IArea;
-                ICurve curve = polygon as ICurve;
+                switch (geometry.GeometryType)
+                {
+                    case esriGeometryType.esriGeometryPolygon:
+                        return GetPolygonInfo(geometry);
+                    case esriGeometryType.esriGeometryPolyline:
+                        return GetPolylineInfo(geometry);
+                    case esriGeometryType.esriGeometryPoint:
+                        return GetPointInfo(geometry);
+                    default:
+                        return $"不支持的地理类型: {geometryType}";
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"几何信息获取失败: {ex.Message}";
+            }
+        }
 
-                // 计算面积和周长
-                double polygonArea = area.Area;
-                double polygonLength = curve.Length;
+        /// <summary>
+        /// 获取几何类型描述
+        /// </summary>
+        private string GetGeometryType(IGeometry geometry)
+        {
+            if (geometry == null) return "未知";
 
-                // 获取外包矩形
-                IEnvelope envelope = polygon.Envelope;
+            switch (geometry.GeometryType)
+            {
+                case esriGeometryType.esriGeometryPolygon: return "面";
+                case esriGeometryType.esriGeometryPolyline: return "线";
+                case esriGeometryType.esriGeometryPoint: return "点";
+                case esriGeometryType.esriGeometryMultiPatch: return "多面片";
+                case esriGeometryType.esriGeometryEnvelope: return "包络矩形";
+                default: return geometry.GeometryType.ToString();
+            }
+        }
+
+        /// <summary>
+        /// 获取面要素信息
+        /// </summary>
+        private string GetPolygonInfo(IGeometry geometry)
+        {
+            IPolygon polygon = geometry as IPolygon;
+            if (polygon == null) return "面几何转换失败";
+
+            IArea area = polygon as IArea;
+            ICurve curve = polygon as ICurve;
+            IPointCollection pointCollection = polygon as IPointCollection;
+
+            double polygonArea = area?.Area ?? 0;
+            double polygonLength = curve?.Length ?? 0;
+            int pointCount = pointCollection?.PointCount ?? 0;
+            int partCount = GetPartCount(polygon);
+
+            // 获取外包矩形信息
+            IEnvelope envelope = polygon.Envelope;
+            double width = envelope.Width;
+            double height = envelope.Height;
+            double centerX = (envelope.XMin + envelope.XMax) / 2;
+            double centerY = (envelope.YMin + envelope.YMax) / 2;
+
+            return $"面要素 - " +
+                   $"面积: {polygonArea:F2}, " +
+                   $"周长: {polygonLength:F2}, " +
+                   $"范围: {width:F2} × {height:F2}, " +
+                   $"中心: ({centerX:F2}, {centerY:F2}), " +
+                   $"顶点数: {pointCount}, " +
+                   $"环数: {partCount}";
+        }
+
+        /// <summary>
+        /// 获取线要素信息
+        /// </summary>
+        private string GetPolylineInfo(IGeometry geometry)
+        {
+            IPolyline polyline = geometry as IPolyline;
+            if (polyline == null) return "线几何转换失败";
+
+            ICurve curve = polyline as ICurve;
+            IPointCollection pointCollection = polyline as IPointCollection;
+
+            double length = curve?.Length ?? 0;
+            int pointCount = pointCollection?.PointCount ?? 0;
+            int partCount = GetPartCount(polyline);
+
+            // 获取起点和终点
+            IPoint fromPoint = null;
+            IPoint toPoint = null;
+            try
+            {
+                fromPoint = curve.FromPoint;
+                toPoint = curve.ToPoint;
+            }
+            catch
+            {
+                // 忽略起点终点获取失败
+            }
+
+            // 获取外包矩形信息
+            IEnvelope envelope = polyline.Envelope;
+            double width = envelope.Width;
+            double height = envelope.Height;
+            double centerX = (envelope.XMin + envelope.XMax) / 2;
+            double centerY = (envelope.YMin + envelope.YMax) / 2;
+
+            string fromToInfo = (fromPoint != null && toPoint != null) ?
+                $", 起点: ({fromPoint.X:F2}, {fromPoint.Y:F2}), 终点: ({toPoint.X:F2}, {toPoint.Y:F2})" : "";
+
+            return $"线要素 - " +
+                   $"长度: {length:F2}, " +
+                   $"范围: {width:F2} × {height:F2}, " +
+                   $"中心: ({centerX:F2}, {centerY:F2}), " +
+                   $"顶点数: {pointCount}, " +
+                   $"部分数: {partCount}" +
+                   fromToInfo;
+        }
+
+        /// <summary>
+        /// 获取点要素信息
+        /// </summary>
+        private string GetPointInfo(IGeometry geometry)
+        {
+            IPoint point = geometry as IPoint;
+            if (point == null) return "点几何转换失败";
+
+            return $"点要素 - " +
+                   $"坐标: ({point.X:F2}, {point.Y:F2})";
+        }
+
+        /// <summary>
+        /// 获取多点要素信息
+        /// </summary>
+        private string GetMultipointInfo(IGeometry geometry)
+        {
+            IMultipoint multipoint = geometry as IMultipoint;
+            if (multipoint == null) return "多点几何转换失败";
+
+            IPointCollection pointCollection = multipoint as IPointCollection;
+            int pointCount = pointCollection?.PointCount ?? 0;
+
+            // 获取外包矩形信息
+            IEnvelope envelope = multipoint.Envelope;
+            double width = envelope.Width;
+            double height = envelope.Height;
+            double centerX = (envelope.XMin + envelope.XMax) / 2;
+            double centerY = (envelope.YMin + envelope.YMax) / 2;
+
+            return $"多点要素 - " +
+                   $"点数: {pointCount}, " +
+                   $"范围: {width:F2} × {height:F2}, " +
+                   $"中心: ({centerX:F2}, {centerY:F2})";
+        }
+
+        /// <summary>
+        /// 获取几何部分数量（环数或线段数）
+        /// </summary>
+        private int GetPartCount(IGeometry geometry)
+        {
+            try
+            {
+                IGeometryCollection geometryCollection = geometry as IGeometryCollection;
+                return geometryCollection?.GeometryCount ?? 1;
+            }
+            catch
+            {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// 简化的通用方法（如果只需要基本信息）
+        /// </summary>
+        private string GetSimpleGeometryInfo(IFeature feature)
+        {
+            if (feature?.Shape == null || feature.Shape.IsEmpty)
+                return "无几何信息";
+
+            try
+            {
+                IGeometry geometry = feature.Shape;
+                string geometryType = GetGeometryType(geometry);
+
+                // 通用信息
+                IEnvelope envelope = geometry.Envelope;
                 double width = envelope.Width;
                 double height = envelope.Height;
+                double centerX = (envelope.XMin + envelope.XMax) / 2;
+                double centerY = (envelope.YMin + envelope.YMax) / 2;
 
-                return $"面积: {polygonArea:F2} 平方单位, 周长: {polygonLength:F2} 单位, 范围: {width:F2} × {height:F2}";
+                string info = $"{geometryType}要素 - 范围: {width:F2} × {height:F2}, 中心: ({centerX:F2}, {centerY:F2})";
+
+                // 类型特定信息
+                if (geometry.GeometryType == esriGeometryType.esriGeometryPolygon)
+                {
+                    IArea area = geometry as IArea;
+                    if (area != null)
+                        info += $", 面积: {area.Area:F2}";
+                }
+
+                if (geometry.GeometryType == esriGeometryType.esriGeometryPolyline ||
+                    geometry.GeometryType == esriGeometryType.esriGeometryPolygon)
+                {
+                    ICurve curve = geometry as ICurve;
+                    if (curve != null)
+                        info += $", 长度: {curve.Length:F2}";
+                }
+
+                return info;
             }
             catch (Exception ex)
             {
@@ -2132,6 +2454,7 @@ namespace EngineWindowsApplication1
                 {
                     // 高亮显示最大面要素
                     HighlightFeature(featureLayer, maxFeature);
+                    PrintPolygonInfo(maxFeature, featureLayer);
                     double area = GetFeatureArea(maxFeature);
                     MessageBox.Show($"找到最大面要素，面积为：{area:F2} 平方单位");
                 }
@@ -2178,6 +2501,7 @@ namespace EngineWindowsApplication1
                 {
                     // 高亮显示最小面要素
                     HighlightFeature(featureLayer, minFeature);
+                    PrintPolygonInfo(minFeature, featureLayer);
                     double area = GetFeatureArea(minFeature);
                     MessageBox.Show($"找到最小面要素，面积为：{area:F2} 平方单位");
                 }
@@ -2238,7 +2562,7 @@ namespace EngineWindowsApplication1
                 if (area < minArea)
                 {
                     minArea = area;
-                    minFeature = feature;
+                    minFeature = featureClass.GetFeature(feature.OID); ;
                 }
                 feature = featureCursor.NextFeature();
             }
